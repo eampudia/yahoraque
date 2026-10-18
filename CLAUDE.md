@@ -4,7 +4,7 @@
 
 ## Stack
 - Language: Python
-- Production runtime: Streamlit (`streamlit run <entrypoint>.py`)
+- Production runtime: Streamlit (`streamlit run init.py`)
 - Local development and testing: Docker only
 
 ## Rules
