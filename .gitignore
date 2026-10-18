@@ -1,0 +1,11 @@
+# Secrets
+.env
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Local storage (STORAGE_MODE=local)
+.data/
