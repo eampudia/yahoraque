@@ -15,9 +15,9 @@ st.components.v1.html("""
         }
 
         body {
-            background-color: #f4f6f9;
-            color: #333;
-            padding: 20px;
+            background-color: #fdfbf7;
+            color: #4a403a;
+            padding: 16px;
         }
 
         .container {
@@ -27,74 +27,76 @@ st.components.v1.html("""
 
         header {
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
         header h1 {
-            color: #2c3e50;
-            font-size: 28px;
-            margin-bottom: 5px;
+            color: #6b5b95;
+            font-size: 26px;
+            margin-bottom: 4px;
         }
 
         header p {
-            color: #7f8c8d;
-            font-size: 14px;
+            color: #8c7b8e;
+            font-size: 13px;
         }
 
         /* Upload Screen */
         .upload-screen {
-            background: white;
-            border: 2px dashed #cbd5e1;
-            border-radius: 16px;
+            background: #ffffff;
+            border: 2px dashed #e8d7f1;
+            border-radius: 20px;
             padding: 50px 20px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            box-shadow: 0 8px 20px rgba(107, 91, 149, 0.05);
         }
 
         .upload-screen:hover {
-            border-color: #3b82f6;
-            background: #fafafa;
+            border-color: #b19cd9;
+            background: #faf6fc;
         }
 
         .upload-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
+            font-size: 50px;
+            margin-bottom: 12px;
         }
 
         .upload-screen h3 {
-            color: #1e293b;
-            margin-bottom: 8px;
+            color: #5c4b69;
+            margin-bottom: 6px;
+            font-size: 18px;
         }
 
         .upload-screen p {
-            color: #64748b;
+            color: #9a8c98;
             font-size: 13px;
             margin-bottom: 20px;
         }
 
         .btn-primary {
-            background: #3b82f6;
+            background: #b19cd9;
             color: white;
             border: none;
             padding: 10px 24px;
-            border-radius: 8px;
+            border-radius: 12px;
             font-weight: 500;
             cursor: pointer;
             transition: background 0.2s;
             font-size: 14px;
+            box-shadow: 0 4px 10px rgba(177, 156, 217, 0.3);
         }
 
         .btn-primary:hover {
-            background: #2563eb;
+            background: #9f8bc7;
         }
 
-        /* Editor Layout */
+        /* Editor Layout pastel style */
         .editor-layout {
             display: grid;
             grid-template-columns: 320px 1fr;
-            gap: 24px;
+            gap: 20px;
             align-items: start;
         }
 
@@ -105,18 +107,19 @@ st.components.v1.html("""
         }
 
         .sidebar {
-            background: white;
-            border-radius: 16px;
+            background: #ffffff;
+            border-radius: 20px;
             padding: 20px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            box-shadow: 0 8px 20px rgba(107, 91, 149, 0.05);
             max-height: 80vh;
             overflow-y: auto;
+            border: 1px solid #f3ecf7;
         }
 
         .control-group {
-            margin-bottom: 20px;
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 16px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid #f7f2fa;
+            padding-bottom: 14px;
         }
 
         .control-group:last-child {
@@ -129,7 +132,7 @@ st.components.v1.html("""
             display: block;
             font-weight: 600;
             font-size: 13px;
-            color: #475569;
+            color: #6b5b95;
             margin-bottom: 8px;
         }
 
@@ -141,14 +144,14 @@ st.components.v1.html("""
 
         input[type="range"] {
             flex: 1;
-            accent-color: #3b82f6;
+            accent-color: #b19cd9;
             cursor: pointer;
         }
 
         .slider-value {
             font-size: 12px;
             font-weight: 500;
-            color: #64748b;
+            color: #9a8c98;
             width: 35px;
             text-align: right;
         }
@@ -156,16 +159,17 @@ st.components.v1.html("""
         select, input[type="text"], input[type="color"] {
             width: 100%;
             padding: 8px 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
+            border: 1px solid #e8d7f1;
+            border-radius: 10px;
             font-size: 13px;
             outline: none;
             transition: border-color 0.2s;
-            background: #fff;
+            background: #fdfbf7;
+            color: #4a403a;
         }
 
         select:focus, input[type="text"]:focus {
-            border-color: #3b82f6;
+            border-color: #b19cd9;
         }
 
         input[type="color"] {
@@ -181,25 +185,26 @@ st.components.v1.html("""
         }
 
         .filter-btn {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            background: #faf6fc;
+            border: 1px solid #e8d7f1;
             padding: 8px;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 12px;
             cursor: pointer;
             text-align: center;
             transition: all 0.2s;
             font-weight: 500;
+            color: #6b5b95;
         }
 
         .filter-btn:hover {
-            background: #f1f5f9;
+            background: #f0e6f5;
         }
 
         .filter-btn.active {
-            background: #eff6ff;
-            border-color: #3b82f6;
-            color: #1d4ed8;
+            background: #b19cd9;
+            border-color: #b19cd9;
+            color: white;
         }
 
         .frames-container {
@@ -210,37 +215,41 @@ st.components.v1.html("""
         }
 
         .frame-thumb {
-            width: 45px;
-            height: 45px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
+            width: 50px;
+            height: 50px;
+            border: 2px solid #e8d7f1;
+            border-radius: 10px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
-            background: #f8fafc;
+            font-size: 11px;
+            background: #faf6fc;
             flex-shrink: 0;
             transition: all 0.2s;
+            color: #6b5b95;
+            font-weight: 500;
         }
 
         .frame-thumb.active {
-            border-color: #3b82f6;
-            background: #eff6ff;
+            border-color: #b19cd9;
+            background: #f0e6f5;
+            font-weight: 600;
         }
 
         /* Canvas Workspace */
         .workspace {
-            background: white;
-            border-radius: 16px;
+            background: #ffffff;
+            border-radius: 20px;
             padding: 20px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            box-shadow: 0 8px 20px rgba(107, 91, 149, 0.05);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 500px;
+            min-height: 480px;
             position: relative;
+            border: 1px solid #f3ecf7;
         }
 
         .canvas-container {
@@ -250,9 +259,11 @@ st.components.v1.html("""
             display: flex;
             justify-content: center;
             align-items: center;
-            background: #1e293b;
-            border-radius: 12px;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+            background: #faf6fc;
+            border-radius: 14px;
+            border: 1px solid #e8d7f1;
+            box-shadow: inset 0 2px 6px rgba(107, 91, 149, 0.03);
+            max-height: 60vh;
         }
 
         canvas {
@@ -260,22 +271,23 @@ st.components.v1.html("""
             max-width: 100%;
             height: auto;
             border-radius: 12px;
+            object-fit: contain;
         }
 
         .action-bar {
             display: flex;
             gap: 12px;
-            margin-top: 20px;
+            margin-top: 18px;
             width: 100%;
             justify-content: space-between;
         }
 
         .btn-secondary {
-            background: #e2e8f0;
-            color: #334155;
+            background: #f0e6f5;
+            color: #6b5b95;
             border: none;
             padding: 10px 20px;
-            border-radius: 8px;
+            border-radius: 12px;
             font-weight: 500;
             cursor: pointer;
             transition: background 0.2s;
@@ -283,16 +295,16 @@ st.components.v1.html("""
         }
 
         .btn-secondary:hover {
-            background: #cbd5e1;
+            background: #e4d3ed;
         }
 
         .btn-success {
-            background: #10b981;
-            color: white;
+            background: #a8e6cf;
+            color: #2d5a43;
             border: none;
             padding: 10px 24px;
-            border-radius: 8px;
-            font-weight: 500;
+            border-radius: 12px;
+            font-weight: 600;
             cursor: pointer;
             transition: background 0.2s;
             font-size: 14px;
@@ -300,10 +312,11 @@ st.components.v1.html("""
             align-items: center;
             gap: 6px;
             text-decoration: none;
+            box-shadow: 0 4px 10px rgba(168, 230, 207, 0.3);
         }
 
         .btn-success:hover {
-            background: #059669;
+            background: #95dfc2;
         }
 
         .hidden {
@@ -315,22 +328,22 @@ st.components.v1.html("""
 
     <div class="container">
         <header>
-            <h1>📸 Fotina</h1>
-            <p>Edita tus fotos con filtros, texto y marcos de forma fácil y rápida</p>
+            <h1>🌸 Fotina</h1>
+            <p>Tu mini Photoshop personal con toque pastel</p>
         </header>
 
         <!-- Pantalla de subida -->
         <div id="uploadScreen" class="upload-screen" onclick="document.getElementById('fileInput').click()">
-            <div class="upload-icon">📁</div>
+            <div class="upload-icon">🎨</div>
             <h3>Sube una foto para empezar</h3>
-            <p>Arrastra tu imagen o haz clic aquí (PNG, JPG, JPEG)</p>
+            <p>Arrastra tu imagen o haz clic aquí para seleccionarla (PNG, JPG, JPEG)</p>
             <button class="btn-primary">Seleccionar archivo</button>
             <input type="file" id="fileInput" accept="image/*" class="hidden">
         </div>
 
         <!-- Pantalla de Editor -->
         <div id="editorScreen" class="editor-layout hidden">
-            <!-- Barra lateral de controles -->
+            <!-- Barra lateral de controles en tonos pastel -->
             <div class="sidebar">
                 <!-- Ajustes básicos -->
                 <div class="control-group">
@@ -356,16 +369,16 @@ st.components.v1.html("""
                         <button class="filter-btn active" data-filter="normal">Normal</button>
                         <button class="filter-btn" data-filter="grayscale">Grises</button>
                         <button class="filter-btn" data-filter="sepia">Sepia</button>
-                        <button class="filter-btn" data-filter="invert">Invertir</button>
-                        <button class="filter-btn" data-filter="warm">Cálido</button>
-                        <button class="filter-btn" data-filter="cool">Frío</button>
+                        <button class="filter-btn" data-filter="pastel">Pastel 🌸</button>
+                        <button class="filter-btn" data-filter="sunset">Atardecer 🌅</button>
+                        <button class="filter-btn" data-filter="mint">Menta 🌿</button>
                     </div>
                 </div>
 
                 <!-- Texto -->
                 <div class="control-group">
                     <label>✍️ Texto personalizado</label>
-                    <input type="text" id="customText" placeholder="Escribe algo aquí..." style="margin-bottom: 8px;">
+                    <input type="text" id="customText" placeholder="Escribe algo bonito..." style="margin-bottom: 8px;">
                     <div style="display: flex; gap: 8px; align-items: center;">
                         <input type="color" id="textColor" value="#ffffff" title="Color de texto" style="width: 50px;">
                         <input type="range" id="textSize" min="12" max="72" value="32" title="Tamaño">
@@ -377,9 +390,9 @@ st.components.v1.html("""
                     <label>🖼️ Marcos decorativos</label>
                     <div class="frames-container">
                         <div class="frame-thumb active" onclick="setFrame('none', event)">Ninguno</div>
-                        <div class="frame-thumb" onclick="setFrame('classic', event)" style="border: 4px solid #fff; box-shadow: 0 0 0 1px #000;">Blanco</div>
-                        <div class="frame-thumb" onclick="setFrame('dark', event)" style="background: #111; color: white;">Negro</div>
-                        <div class="frame-thumb" onclick="setFrame('gold', event)" style="border: 4px solid #d4af37;">Dorado</div>
+                        <div class="frame-thumb" onclick="setFrame('white', event)" style="border: 3px solid #fff; background: #eee;">Clásico</div>
+                        <div class="frame-thumb" onclick="setFrame('pastelpink', event)" style="background: #ffd3b6; color: #4a403a;">Rosa</div>
+                        <div class="frame-thumb" onclick="setFrame('lavender', event)" style="background: #dcd0ff; color: #4a403a;">Lila</div>
                         <div class="frame-thumb" onclick="setFrame('polaroid', event)">Polaroid</div>
                     </div>
                 </div>
@@ -490,44 +503,42 @@ st.components.v1.html("""
 
             // Calcular tamaño del marco si aplica
             let frameSize = 0;
-            if (currentFrame === 'classic' || currentFrame === 'dark' || currentFrame === 'gold') {
+            let bottomExtra = 0;
+
+            if (currentFrame === 'white' || currentFrame === 'pastelpink' || currentFrame === 'lavender') {
                 frameSize = Math.max(w, h) * 0.05; // 5% de marco
             } else if (currentFrame === 'polaroid') {
                 frameSize = Math.max(w, h) * 0.06;
+                bottomExtra = h * 0.18; // Espacio extra inferior estilo polaroid
             }
 
             canvas.width = w + (frameSize * 2);
-            canvas.height = h + (frameSize * 2) + (currentFrame === 'polaroid' ? h * 0.15 : 0);
+            canvas.height = h + (frameSize * 2) + bottomExtra;
 
-            // Fondo del marco
+            // Color de fondo del marco
             ctx.fillStyle = '#ffffff';
-            if (currentFrame === 'dark') ctx.fillStyle = '#111111';
-            if (currentFrame === 'gold') ctx.fillStyle = '#d4af37';
+            if (currentFrame === 'pastelpink') ctx.fillStyle = '#ffd3b6';
+            if (currentFrame === 'lavender') ctx.fillStyle = '#dcd0ff';
+            if (currentFrame === 'polaroid') ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Coordenadas para dibujar la imagen dentro del marco
             let imgX = frameSize;
             let imgY = frameSize;
 
-            if (currentFrame === 'polaroid') {
-                imgX = frameSize;
-                imgY = frameSize;
-            }
-
-            // Aplicar efectos de brillo y contraste vía contexto temporal o filtros CSS en ImageData
+            // Aplicar efectos de brillo, contraste y filtros
             ctx.save();
             ctx.translate(imgX, imgY);
 
-            // Construir cadena de filtro CSS para el contexto de canvas
             let b = brightnessInput.value / 100;
             let c = contrastInput.value / 100;
             
             let filterStr = `brightness(${b}) contrast(${c})`;
             if (currentFilter === 'grayscale') filterStr += ' grayscale(100%)';
             if (currentFilter === 'sepia') filterStr += ' sepia(100%)';
-            if (currentFilter === 'invert') filterStr += ' invert(100%)';
-            if (currentFilter === 'warm') filterStr += ' sepia(50%) saturate(140%)';
-            if (currentFilter === 'cool') filterStr += ' hue-rotate(180deg) saturate(90%)';
+            if (currentFilter === 'pastel') filterStr += ' sepia(30%) saturate(120%) brightness(105%)';
+            if (currentFilter === 'sunset') filterStr += ' sepia(40%) hue-rotate(-20deg) saturate(130%)';
+            if (currentFilter === 'mint') filterStr += ' sepia(20%) hue-rotate(70deg) saturate(90%)';
 
             ctx.filter = filterStr;
             ctx.drawImage(img, 0, 0, w, h);
@@ -540,13 +551,19 @@ st.components.v1.html("""
                 let scaledTextSize = (textSize.value / 500) * Math.max(w, h);
                 ctx.font = `bold ${scaledTextSize}px 'Poppins', sans-serif`;
                 ctx.fillStyle = textColor.value;
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-                ctx.lineWidth = scaledTextSize / 8;
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.lineWidth = scaledTextSize / 10;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'bottom';
 
                 let textX = imgX + (w / 2);
-                let textY = imgY + h - (h * 0.08);
+                let textY;
+
+                if (currentFrame === 'polaroid') {
+                    textY = imgY + h + (bottomExtra / 2) + (scaledTextSize / 3);
+                } else {
+                    textY = imgY + h - (h * 0.08);
+                }
 
                 ctx.strokeText(textVal, textX, textY);
                 ctx.fillText(textVal, textX, textY);
@@ -554,7 +571,7 @@ st.components.v1.html("""
             }
 
             // Actualizar enlace de descarga
-            downloadBtn.href = canvas.toDataURL('image/jpeg', 0.9);
+            downloadBtn.href = canvas.toDataURL('image/jpeg', 0.95);
         }
     </script>
 </body>
