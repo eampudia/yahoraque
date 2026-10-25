@@ -184,7 +184,9 @@
   - El fichero de la app es Python (`app.py`), pero su único trabajo es mostrar una página completa de HTML, CSS y JavaScript con una sola llamada `st.components.v1.html(HTML, height=...)`. Toda la lógica y la interacción (botones, cálculos, juegos, gráficos) van en JavaScript, así que responde al momento, sin recargar la página en el servidor.
   - Los widgets de Streamlit (`st.button`, `st.text_input`…) solo se usan si algo no se puede hacer en el navegador.
   - La página se muestra aislada (ver «Guardarraíles»): no puede usar `localStorage`, `sessionStorage`, `indexedDB` ni cookies (dan error), así que los datos viven en variables de JavaScript mientras está abierta.
-  - Puede cargar librerías de cdnjs.cloudflare.com o cdn.jsdelivr.net con versión fija; no llama a otras webs ni APIs.
+  - **Estilo Yahoraque:** al mostrar cada app, Yahoraque añade al principio de su `<head>` Pico CSS 2.0.6 y un tema propio con los colores del logo (`--yq-blue` #2f7bf5, `--yq-green` #1cc39a, `--yq-yellow` #fdb924, `--yq-purple` #9a5cf6 como color principal, `--yq-navy` #13183f), letra Fredoka en títulos y botones y Nunito en el texto, y modo claro. La IA usa HTML semántico, que Pico ya pinta, escribe solo el CSS que falte y no redefine esos colores. Los estilos propios de la app van después, así que pueden ajustar el tema. (`app_theme.py`)
+  - **Kit de librerías:** la app solo puede cargar estas, con la dirección y versión exactas: Chart.js 4.4.1 (gráficas), canvas-confetti 1.9.3 (celebraciones), Alpine.js 3.14.1 (interactividad) y p5.js 1.9.4 (juegos y dibujo). Si el código carga otra (`<script src>` o `<link href>` externos), la construcción lo trata como un error y la IA lo corrige. No llama a otras webs ni APIs.
+  - Si la IA escribe `import streamlit…` (sobra, porque `st` ya está dado), esas líneas se quitan solas antes de revisar el código; `components.html(...)` funciona como `st.components.v1.html(...)`.
   - La IA elige la altura del marco (por defecto, 600 píxeles) para que se vea toda la app sin cortes; el marco no crece solo.
   - Números, fechas y dinero en el formato del idioma de los requisitos (en español: 1.234,56 € y 25/10/2026).
 - **Las apps no recuerdan nada:** no guardan datos entre sesiones. Se avisa al usuario de esto durante el modo Analista.
@@ -280,6 +282,8 @@ La app está bien si:
 - Si la nueva versión no arranca tras 2 arreglos, se sigue viendo la anterior y los requisitos nuevos no se guardan.
 - Una app con `import os`, `st.secrets`, `getattr`, `open` o atributos `__…__` se rechaza antes de ejecutarse. Los textos pueden contener `__` (habitual en JavaScript y CSS).
 - Una app nueva se construye como página HTML/JavaScript dentro de `st.components.v1.html`, sin widgets de Streamlit salvo que haga falta, y funciona en Chrome y Safari dentro del marco aislado.
+- Dentro de cualquier app están cargados Pico CSS y el tema de Yahoraque (títulos en Fredoka, variables `--yq-*`).
+- Una app que carga una librería fuera del kit (por ejemplo, Tailwind) no se guarda tal cual: la IA tiene que quitarla.
 - Una app con un widget `key="user"` no cambia el usuario conectado.
 - `st.video`, `st.audio` o `st.image` con una ruta de fichero del servidor dan error.
 - Una app con un bucle infinito no se guarda y Yahoraque sigue respondiendo.
