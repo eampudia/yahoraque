@@ -3,6 +3,6 @@ Para qué sirve: Una calculadora adorable con estética anime y colores pasteles
 Qué podrá hacer el usuario:
 - Sumar, restar, multiplicar y dividir números.
 - Calcular porcentajes.
-- Ver las operaciones en una pantalla con un diseño manga muy cuqui y un personaje bonito acompañando.
-Cómo se verá: Una página web sencilla con botones grandes en tonos pasteles, un aspecto de estilo anime muy agradable y un personaje decorativo.
+- Ver las operaciones en una pantalla con un diseño manga muy cuqui y una vaquita tierna kawaii acompañando.
+Cómo se verá: Una página web sencilla con botones grandes en tonos pasteles, un aspecto de estilo anime muy agradable y una vaquita kawaii decorativa.
 Qué no hará: No recordará el historial de operaciones ni los cálculos anteriores si cierras o recargas la página.
