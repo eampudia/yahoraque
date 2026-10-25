@@ -20,11 +20,12 @@ PUSH_ATTEMPTS = 3
 
 def get_secret(name):
     """Read a secret from the environment (local) or Streamlit secrets (cloud)."""
-    value = os.environ.get(name)
+    # Stray spaces around a value (e.g. "NAME = value" in .env) would break URLs.
+    value = (os.environ.get(name) or "").strip()
     if value:
         return value
     try:
-        return st.secrets[name]
+        return str(st.secrets[name]).strip()
     except Exception:
         return None
 
