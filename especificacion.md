@@ -44,6 +44,8 @@
 6. **Registro interno:** qué modelo respondió y cuáles fallaron se anota en los logs, nunca en la pantalla del usuario.
 - **Instrucciones para el modelo (system prompt):**
   - **Modo Analista:** se comporta como un analista tratando con un cliente. Hace las preguntas necesarias y, cuando ve que puede diseñar algo, muestra los requerimientos en lenguaje no técnico y pregunta si se empieza a construir.
+    - **Si el usuario ya tiene app:** el analista recibe su nombre y sus requisitos guardados. Saluda con «¡Hola! Tu aplicación <nombre> ya está funcionando. Cuéntame qué te gustaría cambiar o añadir.», trata lo que pida como cambios sobre esa app (salvo que diga claramente que quiere otra distinta), no vuelve a preguntar lo que ya está en los requisitos y, al terminar, escribe los requisitos **completos** actualizados: lo que se mantiene más lo que cambia, con el mismo título.
+    - El Desarrollador recibe esos requisitos completos junto con el código actual de la app (ver «Modo Desarrollador»).
   - **Modo Desarrollador:** se comporta como un programador senior. Recibe los requisitos confirmados (y el código actual de la app, si ya tenía una) y devuelve, en la misma respuesta, una línea `NOMBRE: <palabra>` con el nombre inventado de la app y el código completo en un único bloque, cumpliendo las reglas de los guardarraíles (sección 7), que se le explican en sus instrucciones. Si la app es de las prohibidas, responde «RECHAZADA» y no se construye nada.
   - En ambos modos rechaza peticiones de phishing, suplantación o acciones moralmente no deseables (ver sección 7).
 
@@ -253,6 +255,7 @@ La app está bien si:
 - Una app privada solo la ven su dueño y el admin.
 - Un usuario puede volver a una versión anterior de su app.
 - Un usuario puede borrar su app (su cuenta sigue y puede crear otra). Borrar su propia cuenta está pendiente.
+- Con una app ya creada, al pedir un cambio en el chat, el analista no vuelve a preguntar lo que ya estaba en los requisitos, y los requisitos nuevos conservan todo lo anterior que no se ha pedido cambiar.
 - Una app recién construida tiene un nombre de una sola palabra, solo letras, de 20 como mucho, y lo conserva al cambiarla desde el chat.
 - Una app nueva es privada: un invitado no la ve en «Apps públicas» ni puede abrirla con su enlace.
 - Al activar «Pública», la app aparece en «Apps públicas» y un invitado puede abrirla y usarla; al desactivarlo, deja de aparecer y su enlace muestra «Esta aplicación no existe o no es pública.».

@@ -5,6 +5,7 @@ Access with name + PIN, guest or admin.
 
 import json
 import logging
+from pathlib import Path
 
 import streamlit as st
 
@@ -29,6 +30,8 @@ BUILD_MESSAGES = {
     "error": "No hemos podido guardar tu aplicación. Inténtalo de nuevo en un rato.",
 }
 SESSION_COOKIE = "yahoraque_sesion"
+LOGO = Path(__file__).parent / "assets" / "logo.png"
+SIDEBAR_LOGO_WIDTH = 160
 ROLE_LABELS = {
     auth.ROLE_GUEST: "invitado",
     auth.ROLE_USER: "usuario",
@@ -78,7 +81,8 @@ def try_access(action, *args):
 
 
 def login_page():
-    st.title("Yahoraque")
+    _, center, _ = st.columns([1, 2, 1])
+    center.image(LOGO, width="stretch")
     st.write("Crea tu propia aplicación sin saber programar.")
 
     enter_tab, new_tab = st.tabs(["Entrar", "Soy nuevo"])
@@ -266,12 +270,15 @@ def analyst_page():
     st.title("Mi aplicación")
 
     saved = saved_requirements(user["id"])
+    meta = app_meta(user["id"])
     if saved:
         with st.expander("Lo que ya me pediste"):
             show_requirements(saved)
+    # Changes start from the app the user already has.
+    current_app = {"name": meta["name"], "requirements": saved} if meta and saved else None
 
     st.session_state.setdefault("chat", [])
-    st.chat_message("assistant").write(analyst.GREETING)
+    st.chat_message("assistant").write(analyst.greeting(meta and meta["name"]))
     for message in st.session_state.chat:
         st.chat_message(message["role"]).write(message["content"])
 
@@ -310,7 +317,7 @@ def analyst_page():
         st.session_state.chat.append({"role": "user", "content": prompt})
         st.chat_message("user").write(prompt)
         try:
-            text, requirements = waiting.run(analyst.reply, st.session_state.chat)
+            text, requirements = waiting.run(analyst.reply, st.session_state.chat, current_app)
         except llm.AIUnavailable:
             # Rerun so the unanswered message also disappears from the screen.
             st.session_state.chat.pop()
@@ -435,10 +442,17 @@ admin_users_page = st.Page(users_page, title="Usuarios", url_path=USERS_URL_PATH
 pages = [public_list_page, view_page] if is_guest else [home, my_app_page, public_list_page, view_page]
 if user["role"] == auth.ROLE_ADMIN:
     pages.append(admin_users_page)
-navigation = st.navigation(pages)
+# Our own menu, so the logo can go above it at a readable size
+# (st.logo is at most 32px high).
+navigation = st.navigation(pages, position="hidden")
 
-# After st.navigation, so the user buttons can switch page.
+# After st.navigation, so the links and user buttons can switch page.
 with st.sidebar:
+    st.image(LOGO, width=SIDEBAR_LOGO_WIDTH)
+    for page in pages:
+        if page is not view_page:
+            st.page_link(page)
+    st.divider()
     st.write(f"**{user['name']}** · {ROLE_LABELS[user['role']]}")
     if st.button("Salir"):
         st.session_state.clear()

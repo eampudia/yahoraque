@@ -59,9 +59,37 @@ cliente pide cambios después de ver los requisitos, sigue la conversación y vu
 completos entre las marcas."""
 
 
-def reply(messages):
-    """Return (text to show, requirements or None) for the next analyst turn."""
-    answer = llm.generate(SYSTEM_PROMPT, messages)
+CURRENT_APP_PROMPT = """
+
+El cliente ya tiene una aplicación funcionando, llamada {name}, construida con estos requisitos:
+---
+{requirements}
+---
+Lo que pida a partir de ahora son cambios sobre esa aplicación, salvo que diga claramente que \
+quiere otra distinta. No vuelvas a preguntar lo que ya está en esos requisitos: pregunta solo lo \
+necesario sobre el cambio. Cuando lo tengas claro, escribe los requisitos completos actualizados \
+(lo que se mantiene más lo que cambia), con el mismo formato y entre las marcas. Mantén el título."""
+
+
+def greeting(name=None):
+    if name:
+        return (
+            f"¡Hola! Tu aplicación {name} ya está funcionando. "
+            "Cuéntame qué te gustaría cambiar o añadir."
+        )
+    return GREETING
+
+
+def reply(messages, current_app=None):
+    """Return (text to show, requirements or None) for the next analyst turn.
+
+    current_app: {"name", "requirements"} of the user's app, if there is one, so
+    the analyst works on changes instead of starting from scratch.
+    """
+    system_prompt = SYSTEM_PROMPT
+    if current_app:
+        system_prompt += CURRENT_APP_PROMPT.format(**current_app)
+    answer = llm.generate(system_prompt, messages)
     match = REQUIREMENTS_PATTERN.search(answer)
     if not match:
         return answer.strip(), None
