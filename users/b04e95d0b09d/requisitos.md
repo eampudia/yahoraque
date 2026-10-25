@@ -1,9 +1,10 @@
-Título: Calculadora Pastel
-Para qué sirve: Una aplicación web bonita y sencilla para hacer cuentas diarias, calcular descuentos y dividir gastos entre amigos.
+Título: Editor de Fotos Fácil
+Para qué sirve: Una aplicación sencilla para retocar y personalizar tus imágenes directamente desde el navegador.
 Qué podrá hacer el usuario:
-- Realizar operaciones matemáticas básicas (sumar, restar, multiplicar y dividir).
-- Calcular descuentos de compras de forma rápida introduciendo el precio y el porcentaje.
-- Dividir una cuenta entre varias personas y calcular la propina fácilmente.
-- Cambiar entre las diferentes funciones (calculadora básica, descuentos y dividir cuenta) con pestañas sencillas.
-Cómo se verá: Un diseño muy limpio y visualmente atractivo, con botones redondos, números claros y una paleta de colores en tonos pastel.
-Qué no hará: No guardará el historial de operaciones ni los datos introducidos al cerrar o recargar la página.
+- Cargar una foto desde su ordenador o móvil.
+- Ajustar el brillo, el contraste y aplicar filtros de color.
+- Recortar, girar y cambiar el tamaño de la imagen.
+- Escribir texto y añadir formas o elementos sencillos sobre la foto.
+- Descargar la foto final editada a su dispositivo.
+Cómo se verá: Una pantalla clara con la imagen en la parte central y botones o barras deslizantes muy sencillas alrededor para aplicar los retoques.
+Qué no hará: No guardará tus fotos en internet ni mantendrá un historial de imágenes al cerrar la página.
