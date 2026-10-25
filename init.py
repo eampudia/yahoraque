@@ -13,6 +13,7 @@ import llm
 import storage
 
 ANALYST_URL_PATH = "mi-app"
+USERS_URL_PATH = "usuarios"
 ASTROS_MESSAGE = "Los astros no están alineados, inténtalo más tarde."
 ROLE_LABELS = {
     auth.ROLE_GUEST: "invitado",
@@ -79,7 +80,7 @@ def home_page():
 
 
 def requirements_path(uid):
-    return f"users/{uid}/requisitos.md"
+    return f"{auth.USERS_DIR}/{uid}/requisitos.md"
 
 
 def saved_requirements(uid):
@@ -158,20 +159,108 @@ def analyst_page():
         st.rerun()
 
 
+def selected_user():
+    uid = st.session_state.get("selected_user")
+    return next((user for user in registered_users() if user["id"] == uid), None)
+
+
+def registered_users():
+    try:
+        return auth.list_users()
+    except Exception:
+        logging.exception("Listing users failed")
+        return []
+
+
+def users_page():
+    st.title("Usuarios")
+    user = selected_user()
+    if user is None:
+        st.write("Elige un usuario en la barra de la izquierda.")
+        return
+
+    st.header(user["name"])
+    if user["created_at"]:
+        st.caption(f"Registrado el {user['created_at'][:10]}")
+
+    st.subheader("Su aplicación")
+    try:
+        requirements = storage.read_file(requirements_path(user["id"]))
+    except Exception:
+        logging.exception("Reading requirements failed")
+        st.error("No hemos podido leer sus datos. Inténtalo de nuevo en un rato.")
+        return
+    if requirements:
+        show_requirements(requirements)
+        st.caption("La aplicación todavía no se construye: aquí se ven sus requisitos.")
+    else:
+        st.write("Todavía no ha pedido ninguna aplicación.")
+
+    st.divider()
+    if not st.session_state.get("confirm_delete"):
+        if st.button("Borrar usuario"):
+            st.session_state.confirm_delete = True
+            st.rerun()
+        return
+
+    st.warning(f"Se borrará a **{user['name']}** y su aplicación. No se puede deshacer.")
+    yes, cancel = st.columns(2)
+    if yes.button("Sí, borrar", type="primary", width="stretch"):
+        try:
+            auth.delete_user(user["id"])
+        except Exception:
+            logging.exception("Deleting user failed")
+            st.error("No hemos podido borrar el usuario. Inténtalo de nuevo en un rato.")
+            return
+        del st.session_state.selected_user
+        del st.session_state.confirm_delete
+        st.toast(f"{user['name']} borrado.")
+        st.rerun()
+    if cancel.button("Cancelar", width="stretch"):
+        del st.session_state.confirm_delete
+        st.rerun()
+
+
+def users_sidebar():
+    st.subheader("Usuarios registrados")
+    users = registered_users()
+    if not users:
+        st.caption("Todavía no hay nadie.")
+    for registered in users:
+        is_selected = registered["id"] == st.session_state.get("selected_user")
+        if st.button(
+            registered["name"],
+            key=f"user_{registered['id']}",
+            type="primary" if is_selected else "secondary",
+            width="stretch",
+        ):
+            st.session_state.selected_user = registered["id"]
+            st.session_state.pop("confirm_delete", None)
+            st.switch_page(admin_users_page)
+
+
 user = st.session_state.get("user")
 if user is None:
     login_page()
     st.stop()
 
+my_app_page = st.Page(analyst_page, title="Mi aplicación", url_path=ANALYST_URL_PATH)
+admin_users_page = st.Page(users_page, title="Usuarios", url_path=USERS_URL_PATH)
+pages = [st.Page(home_page, title="Inicio", default=True)]
+if user["role"] != auth.ROLE_GUEST:
+    pages.append(my_app_page)
+if user["role"] == auth.ROLE_ADMIN:
+    pages.append(admin_users_page)
+navigation = st.navigation(pages)
+
+# After st.navigation, so the user buttons can switch page.
 with st.sidebar:
     st.write(f"**{user['name']}** · {ROLE_LABELS[user['role']]}")
     if st.button("Salir"):
         st.session_state.clear()
         st.rerun()
+    if user["role"] == auth.ROLE_ADMIN:
+        st.divider()
+        users_sidebar()
 
-my_app_page = st.Page(analyst_page, title="Mi aplicación", url_path=ANALYST_URL_PATH)
-pages = [st.Page(home_page, title="Inicio", default=True)]
-if user["role"] != auth.ROLE_GUEST:
-    pages.append(my_app_page)
-
-st.navigation(pages).run()
+navigation.run()

@@ -1,8 +1,9 @@
 """Access with name + PIN, guest access and admin login.
 
 Each user is stored in users/<user_id>/user.json, where user_id is a hash
-of the normalized name. The PIN is never stored: only an HMAC of it keyed
-with the PIN_SECRET secret, so the public repo does not reveal it.
+of the normalized name. The file keeps the name so the admin can tell users
+apart. The PIN is never stored: only an HMAC of it keyed with the
+PIN_SECRET secret, so the public repo does not reveal it.
 """
 
 import hashlib
@@ -10,8 +11,11 @@ import hmac
 import json
 from datetime import datetime, timezone
 
+import streamlit as st
+
 import storage
 
+USERS_DIR = "users"
 ROLE_GUEST = "guest"
 ROLE_USER = "user"
 ROLE_ADMIN = "admin"
@@ -30,7 +34,7 @@ def user_id(name):
 
 
 def _user_path(uid):
-    return f"users/{uid}/user.json"
+    return f"{USERS_DIR}/{uid}/user.json"
 
 
 def _hash_pin(uid, pin):
@@ -88,8 +92,37 @@ def register(name, pin):
         raise LoginError("Ese nombre ya está cogido. Prueba con otro.")
 
     user = {
+        "name": name.strip(),
         "pin_hash": _hash_pin(uid, pin),
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     storage.write_file(path, json.dumps(user, indent=2), f"Nuevo usuario {uid}")
+    list_users.clear()
     return _session(ROLE_USER, name)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def list_users():
+    """Registered users, sorted by name: [{"id", "name", "created_at"}].
+
+    Cached because on GitHub each user is one API call.
+    """
+    users = []
+    for uid in storage.list_dir(USERS_DIR):
+        data = storage.read_file(_user_path(uid))
+        user = json.loads(data) if data else {}
+        users.append(
+            {
+                "id": uid,
+                # Users created before names were stored only have their hash.
+                "name": user.get("name") or uid,
+                "created_at": user.get("created_at"),
+            }
+        )
+    return sorted(users, key=lambda user: normalize_name(user["name"]))
+
+
+def delete_user(uid):
+    """Delete the user's folder: account, requirements and app."""
+    storage.delete_dir(f"{USERS_DIR}/{uid}", f"Borrar usuario {uid}")
+    list_users.clear()

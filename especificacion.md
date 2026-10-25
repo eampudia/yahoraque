@@ -69,8 +69,16 @@
 - El PIN nunca se guarda en claro. Se guarda su hash, combinado con un secreto (`PIN_SECRET`), para que no se pueda adivinar a partir del repositorio público.
 - **PIN olvidado:** no hay recuperación. El admin puede borrar el usuario para que vuelva a registrarse.
 - **Admin:** entra con el nombre `ADMIN_NAME` y la contraseña `ADMIN_PASSWORD`, ambos en los secretos.
+- El nombre se guarda tal cual lo escribió el usuario (sin espacios al principio o al final) en su `user.json`, para que el admin pueda reconocerlo. Los usuarios registrados antes de este cambio aparecen con su hash en lugar del nombre.
 - Se recomienda al usuario usar un alias en lugar de su nombre real.
 - **"Privada" significa que solo se puede usar desde Yahoraque por su dueño**, no que el código sea secreto. El repositorio de GitHub es público (ver sección 11).
+
+### Gestión de usuarios (solo admin)
+- **Listado:** cuando entra el admin, la barra de la izquierda muestra, debajo del menú, todos los usuarios registrados ordenados por nombre (sin distinguir mayúsculas). El admin no aparece en la lista. Los invitados y los usuarios no ven esta lista.
+- **Detalle:** al pulsar un usuario se abre la página «Usuarios» con su nombre, la fecha de registro y su aplicación. Mientras no exista la construcción de apps, se muestran sus requisitos guardados, o «Todavía no ha pedido ninguna aplicación» si no tiene.
+- **Borrado:** en esa página, «Borrar usuario» pide confirmación («Sí, borrar» / «Cancelar»). Al confirmar se elimina la carpeta del usuario entera (cuenta, requisitos y app) y desaparece de la lista. Con ese nombre se puede volver a registrar cualquiera.
+- Si falla la lectura o el borrado, se muestra un mensaje sencillo y el error real va a los logs.
+- La lista se guarda en memoria hasta 5 minutos para no hacer una llamada a GitHub por usuario en cada clic. Se refresca al momento cuando alguien se registra o se borra un usuario.
 
 ## 6. Flujo del usuario
 
@@ -144,6 +152,9 @@ La app está bien si:
 - Una app privada solo la ven su dueño y el admin.
 - Un usuario puede volver a una versión anterior de su app.
 - Un usuario puede borrar su app y su cuenta.
+- El admin ve en la barra de la izquierda a todos los usuarios registrados; los demás no ven esa lista.
+- El admin puede abrir cualquier usuario y ver su aplicación (o sus requisitos, mientras no se construyan apps).
+- Tras confirmar el borrado, el usuario desaparece de la lista, su carpeta ya no existe y no puede entrar con su nombre y PIN.
 - El código generado no consigue leer los secretos.
 - Si el modelo más potente falla, el usuario recibe la respuesta de otro modelo sin ver ningún error.
 - Cuando se agota la IA, aparece el mensaje "Los astros no están alineados, inténtalo más tarde."
@@ -160,7 +171,7 @@ La app está bien si:
 - **Sin límite de mensajes:** un único usuario muy activo puede agotar la cuota gratuita del día para todos.
 - **Historial de git:** al borrar una cuenta, sus versiones antiguas siguen en el historial del repositorio.
 - **Privacidad en la capa gratuita:** el proveedor de IA puede usar los datos enviados para entrenar sus modelos.
-- **Repositorio público (es una práctica de máster):** "privada" significa que la app no aparece ni se puede abrir desde Yahoraque, pero su código se puede leer en GitHub. Quien conozca el nombre de un usuario puede calcular el hash y encontrar su carpeta. El código de los guardarraíles también es público. Se avisa al usuario de que no ponga información sensible en su app.
+- **Repositorio público (es una práctica de máster):** "privada" significa que la app no aparece ni se puede abrir desde Yahoraque, pero su código se puede leer en GitHub. Además, el nombre de cada usuario se lee en claro en su `user.json`. El código de los guardarraíles también es público. Se avisa al usuario de que no ponga información sensible en su app.
 - **PIN corto:** un PIN de pocos dígitos se puede adivinar probando muchas combinaciones desde la pantalla de acceso. Para una práctica se acepta sin límite de intentos.
 - **Guardar en `master`:** cada guardado de una app es un push a la rama que despliega Streamlit Cloud, lo que puede provocar que Yahoraque se actualice o reinicie para todos los usuarios conectados. Hay que comprobarlo con una prueba al principio del desarrollo.
 

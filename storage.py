@@ -7,6 +7,7 @@ never in the code branch that Streamlit deploys.
 
 import base64
 import os
+import shutil
 from pathlib import Path
 
 import requests
@@ -124,3 +125,46 @@ def write_file(path, content, message):
     file = LOCAL_DIR / path
     file.parent.mkdir(parents=True, exist_ok=True)
     file.write_text(content)
+
+
+def list_dir(path):
+    """Return the names of the entries in a folder, or [] if it does not exist."""
+    if _use_github():
+        url, headers = _github_request(path)
+        response = requests.get(url, headers=headers, params={"ref": _data_branch()}, timeout=30)
+        if response.status_code == 404:
+            return []
+        response.raise_for_status()
+        return sorted(entry["name"] for entry in response.json())
+
+    folder = LOCAL_DIR / path
+    return sorted(entry.name for entry in folder.iterdir()) if folder.is_dir() else []
+
+
+def _delete_github_dir(path, message):
+    url, headers = _github_request(path)
+    response = requests.get(url, headers=headers, params={"ref": _data_branch()}, timeout=30)
+    if response.status_code == 404:
+        return
+    response.raise_for_status()
+    for entry in response.json():
+        if entry["type"] == "dir":
+            _delete_github_dir(entry["path"], message)
+            continue
+        file_url, _ = _github_request(entry["path"])
+        deleted = requests.delete(
+            file_url,
+            headers=headers,
+            json={"message": message, "sha": entry["sha"], "branch": _data_branch()},
+            timeout=30,
+        )
+        deleted.raise_for_status()
+
+
+def delete_dir(path, message):
+    """Delete a folder and everything in it. Git history keeps the old versions."""
+    if _use_github():
+        _delete_github_dir(path, message)
+        return
+
+    shutil.rmtree(LOCAL_DIR / path, ignore_errors=True)
