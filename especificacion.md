@@ -46,7 +46,7 @@
   - **Modo Analista:** se comporta como un analista tratando con un cliente. Hace las preguntas necesarias y, cuando ve que puede diseñar algo, muestra los requerimientos en lenguaje no técnico y pregunta si se empieza a construir.
     - **Si el usuario ya tiene app:** el analista recibe su nombre y sus requisitos guardados. Saluda con «¡Hola! Tu aplicación <nombre> ya está funcionando. Cuéntame qué te gustaría cambiar o añadir.», trata lo que pida como cambios sobre esa app (salvo que diga claramente que quiere otra distinta), no vuelve a preguntar lo que ya está en los requisitos y, al terminar, escribe los requisitos **completos** actualizados: lo que se mantiene más lo que cambia, con el mismo título.
     - El Desarrollador recibe esos requisitos completos junto con el código actual de la app (ver «Modo Desarrollador»).
-  - **Modo Desarrollador:** se comporta como un programador senior. Recibe los requisitos confirmados (y el código actual de la app, si ya tenía una) y devuelve, en la misma respuesta, una línea `NOMBRE: <palabra>` con el nombre inventado de la app y el código completo en un único bloque, cumpliendo las reglas de los guardarraíles (sección 7), que se le explican en sus instrucciones. Si la app es de las prohibidas, responde «RECHAZADA» y no se construye nada.
+  - **Modo Desarrollador:** se comporta como un programador senior de JavaScript, HTML, CSS y Python, y construye la app como una página HTML/JavaScript siempre que sea posible (sección 7, «Ejecución de las apps»). Recibe los requisitos confirmados (y el código actual de la app, si ya tenía una) y devuelve, en la misma respuesta, una línea `NOMBRE: <palabra>` con el nombre inventado de la app y el código completo en un único bloque, cumpliendo las reglas de los guardarraíles (sección 7), que se le explican en sus instrucciones. Si la app es de las prohibidas, responde «RECHAZADA» y no se construye nada.
   - En ambos modos rechaza peticiones de phishing, suplantación o acciones moralmente no deseables (ver sección 7).
 
 ## 5. Usuarios y permisos
@@ -71,6 +71,8 @@
 - **La sesión se recuerda 7 días** en ese navegador, también al recargar la página o cerrarlo:
   - Al entrar (con nombre y PIN, como admin o como invitado), el navegador guarda la cookie `yahoraque_sesion`. Contiene un token con el identificador, el nombre, el rol, la fecha de registro y la fecha de caducidad, firmado con HMAC (clave derivada de `PIN_SECRET`; para el admin, también de `ADMIN_PASSWORD`). Sin el secreto no se puede falsificar ni cambiar, por ejemplo, el rol.
   - Al abrir Yahoraque con una cookie válida se entra directamente, sin pedir el PIN.
+  - **Quién lee la cookie:** Streamlit Cloud no pasa las cookies del navegador a la app (`st.context.cookies` llega vacío), así que un componente propio (`session_cookie.py`) la lee en el navegador y envía su valor a Python; también la escribe al entrar y la borra al salir. En local el servidor sí la ve y se usa directamente.
+  - Puede verse un instante la pantalla de acceso al recargar, mientras el navegador envía la cookie.
   - La cookie deja de valer si: han pasado 7 días desde que se entró; el usuario se ha borrado; el usuario se ha borrado y otra persona se ha registrado con el mismo nombre (no coincide la fecha de registro); en el caso del admin, ha cambiado `ADMIN_PASSWORD` o `ADMIN_NAME`.
   - «Salir» borra la cookie y vuelve a la pantalla de acceso.
   - Los 7 días cuentan desde que se entró con el PIN; usar Yahoraque no los alarga.
@@ -174,7 +176,13 @@
 ### Ejecución de las apps
 - Las apps de los usuarios se ejecutan **dentro de Yahoraque**.
 - **Dónde se ven:** el dueño, en «Inicio»; el admin, en «Usuarios» al elegir al usuario; todos (si es pública), en su página `/app?app=<hash del dueño>`. Siempre dentro de un marco, debajo del título con su nombre.
-- Las apps se generan en Python con Streamlit. Pueden incluir HTML y JavaScript propios, que se muestran aislados (ver «Guardarraíles»).
+- **Apps en JavaScript siempre que sea posible:**
+  - El fichero de la app es Python (`app.py`), pero su único trabajo es mostrar una página completa de HTML, CSS y JavaScript con una sola llamada `st.components.v1.html(HTML, height=...)`. Toda la lógica y la interacción (botones, cálculos, juegos, gráficos) van en JavaScript, así que responde al momento, sin recargar la página en el servidor.
+  - Los widgets de Streamlit (`st.button`, `st.text_input`…) solo se usan si algo no se puede hacer en el navegador.
+  - La página se muestra aislada (ver «Guardarraíles»): no puede usar `localStorage`, `sessionStorage`, `indexedDB` ni cookies (dan error), así que los datos viven en variables de JavaScript mientras está abierta.
+  - Puede cargar librerías de cdnjs.cloudflare.com o cdn.jsdelivr.net con versión fija; no llama a otras webs ni APIs.
+  - La IA elige la altura del marco (por defecto, 600 píxeles) para que se vea toda la app sin cortes; el marco no crece solo.
+  - Números, fechas y dinero en el formato del idioma de los requisitos (en español: 1.234,56 € y 25/10/2026).
 - **Las apps no recuerdan nada:** no guardan datos entre sesiones. Se avisa al usuario de esto durante el modo Analista.
 
 ### Guardarraíles
@@ -183,7 +191,6 @@
      - importa módulos fuera de esta lista: `calendar`, `collections`, `datetime`, `decimal`, `fractions`, `functools`, `itertools`, `json`, `math`, `random`, `re`, `statistics`, `textwrap` (tampoco `streamlit`, que ya viene dado como `st`);
      - usa `eval`, `exec`, `compile`, `open`, `getattr`, `setattr`, `delattr`, `globals`, `locals`, `vars`, `dir`, `type`, `object`, `super`, `input`, `help`, `breakpoint` o `memoryview`;
      - usa nombres o atributos que empiecen por guion bajo, `.format`/`.format_map`, o atributos de frames y código (`gi_`, `f_`, `co_`, `tb_`, `cr_`, `ag_`);
-     - contiene textos con `__`;
      - usa funciones de `st` fuera de la lista permitida (por ejemplo `st.secrets`, `st.sidebar`, `st.set_page_config`, `st.navigation`).
   2. **Ejecución limitada:**
      - Solo hay funciones básicas de Python (`len`, `range`, `sorted`…).
@@ -250,7 +257,7 @@ La app está bien si:
 - Un invitado ve el listado de apps públicas y puede abrirlas, pero no puede crear ni publicar.
 - Un usuario registrado solo puede modificar su propia app.
 - Con un PIN incorrecto no se puede entrar en la cuenta de otro usuario.
-- Tras entrar, al recargar la página se sigue dentro; tras pulsar «Salir», al recargar se ve la pantalla de acceso.
+- Tras entrar, al recargar la página se sigue dentro; tras pulsar «Salir», al recargar se ve la pantalla de acceso. Se cumple en Chrome, Firefox y Safari, y también cuando el servidor no ve las cookies, como en Streamlit Cloud (prueba automática: `tests/e2e_session.py`).
 - Una cookie de sesión modificada a mano, de hace más de 7 días o de un usuario borrado no da acceso.
 - Una app privada solo la ven su dueño y el admin.
 - Un usuario puede volver a una versión anterior de su app.
@@ -266,7 +273,8 @@ La app está bien si:
 - El código generado no consigue leer los secretos.
 - Al confirmar unos requisitos, se construye una app que aparece en «Inicio» del dueño y en «Usuarios» del admin.
 - Si la nueva versión no arranca tras 2 arreglos, se sigue viendo la anterior y los requisitos nuevos no se guardan.
-- Una app con `import os`, `st.secrets`, `getattr`, `open` o atributos `__…__` se rechaza antes de ejecutarse.
+- Una app con `import os`, `st.secrets`, `getattr`, `open` o atributos `__…__` se rechaza antes de ejecutarse. Los textos pueden contener `__` (habitual en JavaScript y CSS).
+- Una app nueva se construye como página HTML/JavaScript dentro de `st.components.v1.html`, sin widgets de Streamlit salvo que haga falta, y funciona en Chrome y Safari dentro del marco aislado.
 - Una app con un widget `key="user"` no cambia el usuario conectado.
 - `st.video`, `st.audio` o `st.image` con una ruta de fichero del servidor dan error.
 - Una app con un bucle infinito no se guarda y Yahoraque sigue respondiendo.
@@ -286,7 +294,9 @@ La app está bien si:
 ## 11. Riesgos asumidos
 
 - **Guardarraíles en el mismo proceso:** Python no permite aislar código de forma totalmente fiable dentro del mismo proceso. Un usuario malicioso podría llegar a saltarse los guardarraíles y leer los secretos. El más peligroso es el token de GitHub, porque con permiso de escritura podría modificar el código de Yahoraque.
-- **Bucles infinitos al usar la app:** la prueba de arranque solo cubre la primera carga. Si una app entra en un bucle infinito al pulsar un botón, bloquea la sesión de quien la usa y gasta CPU del servidor hasta que se reinicia.
+- **El JavaScript no se prueba:** la prueba de arranque solo ejecuta el Python (en Streamlit Cloud no hay navegador para probar la página). Un error de JavaScript no se detecta al construir: la app se guarda y el usuario la ve en blanco o a medias. Se mitiga pidiendo a la IA que revise su JavaScript, y el usuario puede pedir el arreglo en el chat.
+- **Altura fija del marco:** si la IA se queda corta, parte de la app queda cortada o con scroll interno.
+- **Bucles infinitos al usar la app:** la prueba de arranque solo cubre la primera carga. Si el Python de una app entra en un bucle infinito al pulsar un botón, bloquea la sesión de quien la usa y gasta CPU del servidor hasta que se reinicia. Un bucle infinito en el JavaScript solo bloquea la pestaña de quien la usa, no el servidor.
 - **Construcción lenta:** construir una app puede tardar más de un minuto, sobre todo si varios modelos están saturados y hay que probar el siguiente.
 - **Sin límite de mensajes:** un único usuario muy activo puede agotar la cuota gratuita del día para todos.
 - **Historial de git:** al borrar una cuenta, sus versiones antiguas siguen en el historial del repositorio.

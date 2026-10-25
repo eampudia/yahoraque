@@ -6,3 +6,19 @@ services:
     env_file: .env
     volumes:
       - .:/app
+    networks:
+      default:
+        # Safari/WebKit rejects cookies for a host called "app" (.app is a top-level domain).
+        aliases: [yahoraque-local]
+
+  # Browser tests: docker compose --profile test run --rm e2e python e2e_session.py
+  e2e:
+    build: ./tests
+    profiles: ["test"]
+    working_dir: /tests
+    volumes:
+      - ./tests:/tests
+    environment:
+      APP_URL: http://yahoraque-local:8501
+    depends_on:
+      - app

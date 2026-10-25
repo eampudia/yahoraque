@@ -3,7 +3,6 @@
 Access with name + PIN, guest or admin.
 """
 
-import json
 import logging
 from pathlib import Path
 
@@ -14,6 +13,7 @@ import apps
 import auth
 import developer
 import llm
+import session_cookie
 import storage
 import waiting
 
@@ -29,7 +29,6 @@ BUILD_MESSAGES = {
     "rejected": "No podemos construir esta aplicación porque no cumple las normas de Yahoraque.",
     "error": "No hemos podido guardar tu aplicación. Inténtalo de nuevo en un rato.",
 }
-SESSION_COOKIE = "yahoraque_sesion"
 LOGO = Path(__file__).parent / "assets" / "logo.png"
 SIDEBAR_LOGO_WIDTH = 160
 ROLE_LABELS = {
@@ -44,19 +43,12 @@ def start_session(user):
     st.session_state.remember_session = True
 
 
-def set_session_cookie(value, max_age):
-    # Streamlit can read cookies but not write them: the browser does it.
-    secure = "(location.protocol === 'https:' ? '; Secure' : '')"
-    st.html(
-        f"<script>document.cookie = {json.dumps(f'{SESSION_COOKIE}={value}')} + "
-        f"'; Max-Age={max_age}; Path=/; SameSite=Strict' + {secure};</script>",
-        unsafe_allow_javascript=True,
-    )
+def restored_user(browser_token):
+    """The user saved in the session cookie, if it is still valid.
 
-
-def restored_user():
-    """The user saved in the session cookie, if it is still valid."""
-    token = st.context.cookies.get(SESSION_COOKIE)
+    Locally the server sees the cookie; on Streamlit Cloud only the browser does.
+    """
+    token = st.context.cookies.get(session_cookie.COOKIE_NAME) or browser_token
     if not token:
         return None
     try:
@@ -415,18 +407,24 @@ def users_sidebar():
 
 
 user = st.session_state.get("user")
-# After "Salir" the old cookie is still in this connection's headers: ignore it.
-if user is None and not st.session_state.get("logged_out"):
-    user = restored_user()
+logged_out = st.session_state.get("logged_out")
+if user and st.session_state.pop("remember_session", False):
+    browser_token = session_cookie.sync(
+        "set", auth.session_token(user), auth.SESSION_DAYS * 24 * 60 * 60
+    )
+elif user is None and logged_out:
+    browser_token = session_cookie.sync("clear")
+else:
+    browser_token = session_cookie.sync()
+
+# After "Salir" the old cookie may still be in this connection's headers: ignore it.
+if user is None and not logged_out:
+    user = restored_user(browser_token)
     if user:
         st.session_state.user = user
 if user is None:
-    if st.session_state.get("logged_out"):
-        set_session_cookie("", 0)
     login_page()
     st.stop()
-if st.session_state.pop("remember_session", False):
-    set_session_cookie(auth.session_token(user), auth.SESSION_DAYS * 24 * 60 * 60)
 
 is_guest = user["role"] == auth.ROLE_GUEST
 home = st.Page(home_page, title="Inicio", default=not is_guest)
