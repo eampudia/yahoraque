@@ -125,7 +125,7 @@ def home_page():
 
     st.title(meta["name"])
     change, share = st.columns(2)
-    change.page_link(my_app_page, label="Cambiar mi aplicación", icon="💬")
+    change.page_link(my_app_page, label="Cambiar mi aplicación", icon=":material/edit:")
     public = st.toggle(
         "Pública",
         value=meta["public"],
@@ -140,7 +140,7 @@ def home_page():
         st.rerun()
     if meta["public"]:
         share.page_link(
-            view_page, label="Enlace para compartir", icon="🔗", query_params={"app": user["id"]}
+            view_page, label="Enlace para compartir", icon=":material/share:", query_params={"app": user["id"]}
         )
 
     show_app(user["id"])
@@ -187,7 +187,7 @@ def public_page():
             st.subheader(app["name"])
             if app["description"]:
                 st.write(app["description"])
-            st.page_link(view_page, label="Abrir", icon="🚀", query_params={"app": app["id"]})
+            st.page_link(view_page, label="Abrir", icon=":material/arrow_forward:", query_params={"app": app["id"]})
 
 
 def app_view_page():
@@ -201,7 +201,7 @@ def app_view_page():
         # Same message for private and missing apps, so it does not reveal which exist.
         st.title("Aplicación no disponible")
         st.write("Esta aplicación no existe o no es pública.")
-        st.page_link(public_list_page, label="Ver las apps públicas", icon="🔎")
+        st.page_link(public_list_page, label="Ver las apps públicas", icon=":material/explore:")
         return
     st.title(apps.load_meta(uid)["name"])
     show_app(uid)
@@ -293,7 +293,7 @@ def analyst_page():
     build_result = st.session_state.pop("build_result", None)
     if build_result == "ok":
         st.success(f"¡Tu aplicación {apps.load_meta(user['id'])['name']} está lista!")
-        st.page_link(home, label="Ver mi aplicación", icon="🚀")
+        st.page_link(home, label="Ver mi aplicación", icon=":material/arrow_forward:")
     elif build_result:
         st.error(BUILD_MESSAGES[build_result])
 
