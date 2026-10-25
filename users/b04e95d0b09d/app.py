@@ -1,98 +1,76 @@
-st.title("📷 Editor de Fotos Fácil")
-st.markdown(
-    "Una aplicación sencilla para retocar y personalizar tus imágenes directamente desde el navegador de forma rápida."
+st.title("🛍️ Catálogo Rápido")
+st.markdown("Explora, busca y filtra elementos de forma rápida y sencilla.")
+
+# Inicializar elementos de ejemplo si no existen
+if "productos" not in st.session_state:
+    st.session_state.productos = [
+        {"id": 1, "nombre": "Zapatillas Deportivas", "categoria": "Calzado", "precio": 49.99, "seccion": "Destacados", "imagen": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400"},
+        {"id": 2, "nombre": "Reloj Inteligente", "categoria": "Tecnología", "precio": 89.99, "seccion": "Novedades", "imagen": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"},
+        {"id": 3, "nombre": "Mochila Urbana", "categoria": "Accesorios", "precio": 34.50, "seccion": "Destacados", "imagen": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400"},
+        {"id": 4, "nombre": "Auriculares Inalámbricos", "categoria": "Tecnología", "precio": 59.00, "seccion": "Novedades", "imagen": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400"},
+        {"id": 5, "nombre": "Gafas de Sol", "categoria": "Accesorios", "precio": 25.00, "seccion": "Destacados", "imagen": "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=400"},
+        {"id": 6, "nombre": "Camiseta de Algodón", "categoria": "Ropa", "precio": 15.99, "seccion": "Novedades", "imagen": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400"},
+    ]
+
+# Menú superior horizontal con pills
+st.markdown("### 🧭 Menú Principal")
+menu_seleccionado = st.pills(
+    "Secciones",
+    ["Ver todo", "Destacados", "Novedades"],
+    default="Ver todo",
+    key="menu_horizontal"
 )
 
-if "uploaded_image" not in st.session_state:
-    st.session_state.uploaded_image = None
-if "brightness" not in st.session_state:
-    st.session_state.brightness = 100
-if "contrast" not in st.session_state:
-    st.session_state.contrast = 100
-if "filter_type" not in st.session_state:
-    st.session_state.filter_type = "Normal"
-if "rotation" not in st.session_state:
-    st.session_state.rotation = 0
-if "custom_text" not in st.session_state:
-    st.session_state.custom_text = ""
-if "text_color" not in st.session_state:
-    st.session_state.text_color = "#FFFFFF"
+st.divider()
 
-uploaded_file = st.file_uploader("Carga una imagen desde tu dispositivo", type=["jpg", "jpeg", "png", "webp"])
+# Barra de filtros
+col_busqueda, col_categoria = st.columns([2, 1])
 
-if uploaded_file is not None:
-    st.session_state.uploaded_image = uploaded_file
+with col_busqueda:
+    texto_busqueda = st.text_input("🔍 Buscar elemento...", key="input_busqueda")
 
-if st.session_state.uploaded_image is not None:
-    st.success("¡Imagen cargada con éxito!")
+with col_categoria:
+    categorias_disponibles = ["Todas"] + sorted(list(set(p["categoria"] for p in st.session_state.productos)))
+    categoria_seleccionada = st.selectbox("📂 Filtrar por categoría", categorias_disponibles, key="select_categoria")
+
+st.divider()
+
+# Filtrado de productos
+productos_filtrados = st.session_state.productos
+
+# 1. Filtro por menú superior
+if menu_seleccionado == "Destacados":
+    productos_filtrados = [p for p in productos_filtrados if p["seccion"] == "Destacados"]
+elif menu_seleccionado == "Novedades":
+    productos_filtrados = [p for p in productos_filtrados if p["seccion"] == "Novedades"]
+
+# 2. Filtro por categoría
+if categoria_seleccionada != "Todas":
+    productos_filtrados = [p for p in productos_filtrados if p["categoria"] == categoria_seleccionada]
+
+# 3. Filtro por texto de búsqueda
+if texto_busqueda:
+    texto_limpio = texto_busqueda.lower()
+    productos_filtrados = [p for p in productos_filtrados if texto_limpio in p["nombre"].lower() or texto_limpio in p["categoria"].lower()]
+
+# Mostrar resultados en cuadrícula
+if productos_filtrados:
+    st.caption(f"Mostrando {len(productos_filtrados)} elemento(s)")
     
-    col_menu, col_preview = st.columns([1, 2])
-    
-    with col_menu:
-        st.header("🎛️ Herramientas")
-        
-        with st.expander("Ajustes de Imagen", expanded=True):
-            st.session_state.brightness = st.slider("Brillo", 0, 200, st.session_state.brightness)
-            st.session_state.contrast = st.slider("Contraste", 0, 200, st.session_state.contrast)
-            
-        with st.expander("Filtros de Color"):
-            st.session_state.filter_type = st.radio(
-                "Elige un filtro",
-                ["Normal", "Blanco y Negro", "Sepia", "Invertido"],
-                index=["Normal", "Blanco y Negro", "Sepia", "Invertido"].index(st.session_state.filter_type)
-            )
-            
-        with st.expander("Girar y Orientación"):
-            if st.button("🔄 Girar 90° a la derecha"):
-                st.session_state.rotation = (st.session_state.rotation + 90) % 360
-            if st.button("🔄 Girar 90° a la izquierda"):
-                st.session_state.rotation = (st.session_state.rotation - 90) % 360
-                
-        with st.expander("Añadir Texto"):
-            st.session_state.custom_text = st.text_input("Texto personalizado", st.session_state.custom_text)
-            st.session_state.text_color = st.color_picker("Color del texto", st.session_state.text_color)
-            
-        if st.button("🔄 Restablecer todo"):
-            st.session_state.brightness = 100
-            st.session_state.contrast = 100
-            st.session_state.filter_type = "Normal"
-            st.session_state.rotation = 0
-            st.session_state.custom_text = ""
-            st.session_state.text_color = "#FFFFFF"
-            st.rerun()
-
-    with col_preview:
-        st.header("🖼️ Vista Previa")
-        
-        bytes_data = st.session_state.uploaded_image.getvalue()
-        
-        filter_css = f"brightness({st.session_state.brightness}%) contrast({st.session_state.contrast}%);"
-        if st.session_state.filter_type == "Blanco y Negro":
-            filter_css += " grayscale(100%);"
-        elif st.session_state.filter_type == "Sepia":
-            filter_css += " sepia(100%);"
-        elif st.session_state.filter_type == "Invertido":
-            filter_css += " invert(100%);"
-            
-        rotation_css = f"transform: rotate({st.session_state.rotation}deg);"
-        
-        # Mostramos la imagen usando st.image directamente con los controles de Streamlit
-        st.image(st.session_state.uploaded_image, caption="Tu foto", use_container_width=True)
-        
-        if st.session_state.custom_text:
-            st.markdown(
-                f"<div style='text-align: center; color: {st.session_state.text_color}; font-size: 20px; font-weight: bold; background: rgba(0,0,0,0.6); padding: 8px; border-radius: 6px; margin-top: -40px; position: relative;'>{st.session_state.custom_text}</div>",
-                unsafe_allow_html=True
-            )
-        
-        st.info("💡 Puedes descargar tu imagen directamente con el botón de abajo.")
-        
-        st.markdown("### 💾 Guardar y Descargar")
-        st.download_button(
-            label="⬇️ Descargar Imagen",
-            data=bytes_data,
-            file_name="foto_editada.jpg",
-            mime="image/jpeg"
-        )
+    # Creamos filas de 3 columnas
+    for i in range(0, len(productos_filtrados), 3):
+        cols = st.columns(3)
+        for j in range(3):
+            if i + j < len(productos_filtrados):
+                prod = productos_filtrados[i + j]
+                with cols[j]:
+                    with st.container(border=True):
+                        st.image(prod["imagen"], use_container_width=True)
+                        st.subheader(prod["nombre"])
+                        st.write(f"🏷️ **Categoría:** {prod['categoria']}")
+                        st.write(f"✨ **Sección:** {prod['seccion']}")
+                        st.markdown(f"### 💰 {prod['precio']:.2f} €")
+                        if st.button("🛒 Ver detalles", key=f"btn_{prod['id']}"):
+                            st.toast(f"Has seleccionado: {prod['nombre']}")
 else:
-    st.info("👈 Por favor, carga una imagen usando el botón de arriba para comenzar a editar.")
+    st.info("No se han encontrado elementos que coincidan con tu búsqueda.")
