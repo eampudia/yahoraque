@@ -120,10 +120,8 @@ def home_page():
     user = st.session_state.user
     meta = app_meta(user["id"])
     if meta is None:
-        st.title("Yahoraque")
-        st.write(f"Hola, {user['name']}. Todavía no tienes aplicación: cuéntanos qué quieres.")
-        st.page_link(my_app_page, label="Crear mi aplicación", icon="💬")
-        return
+        # Only in the menu while there is an app, but it may have just been deleted.
+        st.switch_page(my_app_page)
 
     st.title(meta["name"])
     change, share = st.columns(2)
@@ -259,10 +257,9 @@ def build_app(uid, requirements):
 
 def analyst_page():
     user = st.session_state.user
-    st.title("Mi aplicación")
-
     saved = saved_requirements(user["id"])
     meta = app_meta(user["id"])
+    st.title(f"Cambiar {meta['name']}" if meta else "Crea tu aplicación")
     if saved:
         with st.expander("Lo que ya me pediste"):
             show_requirements(saved)
@@ -427,8 +424,18 @@ if user is None:
     st.stop()
 
 is_guest = user["role"] == auth.ROLE_GUEST
-home = st.Page(home_page, title="Inicio", default=not is_guest)
-my_app_page = st.Page(analyst_page, title="Mi aplicación", url_path=ANALYST_URL_PATH)
+my_app = None if is_guest else app_meta(user["id"])
+# With an app, the menu starts with its name and opens it; without one,
+# "Inicio" goes straight to the chat to create it.
+home = st.Page(
+    home_page, title=my_app["name"] if my_app else "Inicio", default=bool(my_app)
+)
+my_app_page = st.Page(
+    analyst_page,
+    title="Cambiar mi aplicación" if my_app else "Inicio",
+    url_path=ANALYST_URL_PATH,
+    default=not is_guest and not my_app,
+)
 public_list_page = st.Page(
     public_page, title="Apps públicas", url_path=PUBLIC_URL_PATH, default=is_guest
 )
@@ -437,7 +444,12 @@ view_page = st.Page(
     app_view_page, title="Aplicación", url_path=VIEW_URL_PATH, visibility="hidden"
 )
 admin_users_page = st.Page(users_page, title="Usuarios", url_path=USERS_URL_PATH)
-pages = [public_list_page, view_page] if is_guest else [home, my_app_page, public_list_page, view_page]
+if is_guest:
+    pages = [public_list_page, view_page]
+elif my_app:
+    pages = [home, my_app_page, public_list_page, view_page]
+else:
+    pages = [my_app_page, public_list_page, view_page]
 if user["role"] == auth.ROLE_ADMIN:
     pages.append(admin_users_page)
 # Our own menu, so the logo can go above it at a readable size
