@@ -5,8 +5,9 @@ Two layers, because Python cannot fully sandbox code in the same process
 
 1. check() reads the code before it runs and rejects anything that could
    reach the secrets, the files or Yahoraque itself: imports outside a
-   short list, names and attributes that allow introspection, and strings
-   with "__" that could be used to build them.
+   short list, and names and attributes that allow introspection. Strings
+   may contain "__" (common in JavaScript and CSS): without getattr, vars or
+   .format there is no way to turn them into attribute access.
 2. run() executes the code with only safe builtins and a limited `st`.
    Widget keys and st.session_state get a per-app prefix, so an app cannot
    read or change the state of Yahoraque or of other apps. Media only take
@@ -82,7 +83,8 @@ ST_EXTRAS = {"components", "session_state"}
 MEDIA_FUNCTIONS = {"audio", "image", "video"}
 MEDIA_ARGUMENTS = ("image", "data", "subtitles")
 WEB_PREFIXES = ("http://", "https://", "data:")
-HTML_DEFAULT_HEIGHT = 150
+# Most apps are a whole page of HTML/JavaScript.
+HTML_DEFAULT_HEIGHT = 600
 # st.html with it runs JavaScript in Yahoraque's page: it could steal the session cookie.
 FORBIDDEN_KEYWORDS = {"unsafe_allow_javascript"}
 
@@ -130,8 +132,6 @@ def check(code):
             return f"Línea {line}: no se puede usar «{node.arg}»."
         if isinstance(node, ast.alias) and node.asname and node.asname.startswith("_"):
             return f"Línea {line}: no se puede usar «{node.asname}»."
-        if isinstance(node, ast.Constant) and isinstance(node.value, str) and "__" in node.value:
-            return f"Línea {line}: los textos no pueden contener «__»."
     return None
 
 
