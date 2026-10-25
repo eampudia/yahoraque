@@ -169,3 +169,23 @@ def delete_dir(path, message):
         return
 
     shutil.rmtree(LOCAL_DIR / path, ignore_errors=True)
+
+
+def delete_file(path, message):
+    """Delete one file, if it exists. Git history keeps the old versions."""
+    if not _use_github():
+        (LOCAL_DIR / path).unlink(missing_ok=True)
+        return
+
+    url, headers = _github_request(path)
+    current = requests.get(url, headers=headers, params={"ref": _data_branch()}, timeout=30)
+    if current.status_code == 404:
+        return
+    current.raise_for_status()
+    deleted = requests.delete(
+        url,
+        headers=headers,
+        json={"message": message, "sha": current.json()["sha"], "branch": _data_branch()},
+        timeout=30,
+    )
+    deleted.raise_for_status()

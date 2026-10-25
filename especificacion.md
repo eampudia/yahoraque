@@ -17,9 +17,10 @@
 ## 3. Entradas y salidas
 
 - El usuario describe su problema y el sistema le devuelve unos requerimientos en lenguaje humano, no técnico.
-- Cuando el usuario los confirma, el sistema construye la aplicación.
+- Cuando el usuario los confirma, el sistema construye la aplicación y le inventa un nombre.
 - El usuario puede volver al chat en cualquier momento para pedir cambios.
-- La aplicación queda accesible de forma pública o solo para su dueño.
+- La aplicación es privada (solo la ven su dueño y el admin) hasta que el dueño la hace pública; entonces la puede usar cualquiera, también los invitados sin cuenta.
+- El dueño puede borrar su aplicación y empezar otra.
 
 ## 4. La pieza de IA
 
@@ -43,7 +44,7 @@
 6. **Registro interno:** qué modelo respondió y cuáles fallaron se anota en los logs, nunca en la pantalla del usuario.
 - **Instrucciones para el modelo (system prompt):**
   - **Modo Analista:** se comporta como un analista tratando con un cliente. Hace las preguntas necesarias y, cuando ve que puede diseñar algo, muestra los requerimientos en lenguaje no técnico y pregunta si se empieza a construir.
-  - **Modo Desarrollador:** se comporta como un programador senior. Recibe los requisitos confirmados (y el código actual de la app, si ya tenía una) y devuelve el código completo de la app en un único bloque, cumpliendo las reglas de los guardarraíles (sección 7), que se le explican en sus instrucciones. Si la app es de las prohibidas, responde «RECHAZADA» y no se construye nada.
+  - **Modo Desarrollador:** se comporta como un programador senior. Recibe los requisitos confirmados (y el código actual de la app, si ya tenía una) y devuelve, en la misma respuesta, una línea `NOMBRE: <palabra>` con el nombre inventado de la app y el código completo en un único bloque, cumpliendo las reglas de los guardarraíles (sección 7), que se le explican en sus instrucciones. Si la app es de las prohibidas, responde «RECHAZADA» y no se construye nada.
   - En ambos modos rechaza peticiones de phishing, suplantación o acciones moralmente no deseables (ver sección 7).
 
 ## 5. Usuarios y permisos
@@ -53,18 +54,24 @@
 | Ver el listado de apps públicas | Sí | Sí | Sí |
 | Usar una app pública | Sí | Sí | Sí |
 | Crear o modificar una app | No | Sí, solo la suya | Sí |
-| Publicar una app | No | Sí, solo la suya | Sí |
+| Hacer pública o privada una app | No | Sí, solo la suya | Solo la suya |
 | Ver una app privada | No | Solo la suya | Sí |
-| Borrar su app o su cuenta | No | Sí | Sí, cualquiera |
+| Borrar una app | No | Sí, solo la suya | Solo junto con su usuario |
+| Borrar una cuenta | No | Pendiente (ver más abajo) | Sí, cualquiera |
 
-- Cada usuario registrado tiene **una sola aplicación**.
+- Cada usuario registrado tiene **una sola aplicación**. Para tener otra distinta, borra la suya y crea una nueva (o pide cambios en el chat).
 - Hay un único admin (el propietario de Yahoraque). Puede borrar cualquier usuario junto con su aplicación.
 
 ### Acceso
 - No hay login con Google. El usuario escribe **su nombre y un PIN**.
 - **Primera vez:** en la pestaña «Soy nuevo» elige un nombre libre y un PIN de 4 a 8 números (lo escribe dos veces). Se separa de «Entrar» para que una errata en el nombre no cree un usuario nuevo sin querer.
 - **Siguientes veces:** en la pestaña «Entrar» escribe su nombre y su PIN. Si no coinciden, no entra.
-- La sesión dura mientras la pestaña del navegador esté abierta. Al recargar la página hay que volver a entrar.
+- **La sesión se recuerda 7 días** en ese navegador, también al recargar la página o cerrarlo:
+  - Al entrar (con nombre y PIN, como admin o como invitado), el navegador guarda la cookie `yahoraque_sesion`. Contiene un token con el identificador, el nombre, el rol, la fecha de registro y la fecha de caducidad, firmado con HMAC (clave derivada de `PIN_SECRET`; para el admin, también de `ADMIN_PASSWORD`). Sin el secreto no se puede falsificar ni cambiar, por ejemplo, el rol.
+  - Al abrir Yahoraque con una cookie válida se entra directamente, sin pedir el PIN.
+  - La cookie deja de valer si: han pasado 7 días desde que se entró; el usuario se ha borrado; el usuario se ha borrado y otra persona se ha registrado con el mismo nombre (no coincide la fecha de registro); en el caso del admin, ha cambiado `ADMIN_PASSWORD` o `ADMIN_NAME`.
+  - «Salir» borra la cookie y vuelve a la pantalla de acceso.
+  - Los 7 días cuentan desde que se entró con el PIN; usar Yahoraque no los alarga.
 - Los nombres no distinguen mayúsculas ni espacios al principio o al final: "Ana" y " ana " son el mismo usuario.
 - El PIN nunca se guarda en claro. Se guarda su hash, combinado con un secreto (`PIN_SECRET`), para que no se pueda adivinar a partir del repositorio público.
 - **PIN olvidado:** no hay recuperación. El admin puede borrar el usuario para que vuelva a registrarse.
@@ -75,7 +82,7 @@
 
 ### Gestión de usuarios (solo admin)
 - **Listado:** cuando entra el admin, la barra de la izquierda muestra, debajo del menú, todos los usuarios registrados ordenados por nombre (sin distinguir mayúsculas). El admin no aparece en la lista. Los invitados y los usuarios no ven esta lista.
-- **Detalle:** al pulsar un usuario se abre la página «Usuarios» con su nombre, la fecha de registro y su aplicación. Mientras no exista la construcción de apps, se muestran sus requisitos guardados, o «Todavía no ha pedido ninguna aplicación» si no tiene.
+- **Detalle:** al pulsar un usuario se abre la página «Usuarios» con su nombre, la fecha de registro, el nombre de su aplicación y si es pública o privada, la aplicación funcionando y sus requisitos (desplegables). Si no tiene: «Todavía no tiene aplicación».
 - **Borrado:** en esa página, «Borrar usuario» pide confirmación («Sí, borrar» / «Cancelar»). Al confirmar se elimina la carpeta del usuario entera (cuenta, requisitos y app) y desaparece de la lista. Con ese nombre se puede volver a registrar cualquiera.
 - Si falla la lectura o el borrado, se muestra un mensaje sencillo y el error real va a los logs.
 - La lista se guarda en memoria hasta 5 minutos para no hacer una llamada a GitHub por usuario en cada clic. Se refresca al momento cuando alguien se registra o se borra un usuario.
@@ -84,12 +91,29 @@
 
 1. El usuario entra con su nombre y PIN, o como invitado.
 2. **Invitado:** ve el listado de apps públicas y puede abrirlas. No puede hacer nada más.
-3. **Usuario registrado:** ve su aplicación (o una pantalla para crearla si aún no tiene) y el listado de apps públicas.
+3. **Usuario registrado:** en «Inicio» ve su aplicación (o un enlace «Crear mi aplicación» si aún no tiene). En el menú tiene también «Apps públicas».
 4. Para crear o modificar su app, entra en **modo Analista**: describe lo que quiere y el sistema le hace preguntas hasta tener los requerimientos.
 5. El sistema le muestra los requerimientos en lenguaje sencillo y le pregunta si quiere empezar.
 6. Al confirmar, el sistema construye la app y guarda una nueva versión.
-7. El usuario elige si su app es pública o privada.
-8. El usuario puede volver a cualquier versión anterior de su app.
+7. El usuario elige si su app es pública o privada (ver «Nombre, visibilidad y borrado de la app»).
+8. El usuario puede volver a cualquier versión anterior de su app (**pendiente**).
+
+### Nombre, visibilidad y borrado de la app
+- **Nombre:**
+  - Al construir la app por primera vez, la IA le inventa un nombre: **una sola palabra inventada**, inspirada en los requisitos, fácil de pronunciar (por ejemplo, «Aguatín» para un contador de vasos de agua).
+  - Solo letras (se aceptan tildes y ñ), como mucho 20, con la primera en mayúscula. Si la IA devuelve otra cosa, se quitan los caracteres que no son letras; si no queda nada, se usa «Miapp».
+  - Al cambiar la app desde el chat, **el nombre se mantiene**.
+  - No tiene que ser único: dos apps pueden llamarse igual, porque su dirección usa el hash del dueño.
+  - El nombre es el título de la app en «Inicio», en «Apps públicas», en su página y en el mensaje «¡Tu aplicación <nombre> está lista!».
+- **Visibilidad:**
+  - Una app nueva es **privada**. Cambiar la app desde el chat no cambia su visibilidad.
+  - En «Inicio», el dueño tiene el interruptor «Pública» («Aparece en «Apps públicas» y la puede usar cualquiera, también sin cuenta»).
+  - **Apps públicas:** página del menú para todos. Para los invitados es la página de inicio. Muestra las apps públicas ordenadas por nombre, con su nombre, la frase «Para qué sirve» de sus requisitos y un enlace «Abrir». Si no hay: «Todavía no hay aplicaciones públicas.»
+  - **Página de cada app:** `/app?app=<hash del dueño>`. Cuando la app es pública, el dueño ve en «Inicio» el enlace «Enlace para compartir». Si la app no existe, o es privada y quien la abre no es su dueño ni el admin, se muestra «Esta aplicación no existe o no es pública.», el mismo mensaje en los dos casos, para no revelar qué apps existen.
+  - El listado se guarda en memoria hasta 5 minutos y se refresca al momento cuando una app cambia, se publica, se oculta o se borra.
+- **Borrado:**
+  - En «Inicio», «Borrar mi aplicación» pide confirmación («Se borrará <nombre> y lo que pediste. Tu cuenta sigue. No se puede deshacer.» / «Sí, borrar» / «Cancelar»).
+  - Al confirmar se borran el código, los datos de la app y los requisitos; la cuenta se mantiene y el usuario puede crear una app nueva, que recibirá un nombre nuevo.
 
 ### Mensajes divertidos mientras se espera a la IA
 - En las dos esperas de la IA, en lugar de un texto fijo («Pensando…») se muestra una frase divertida junto al indicador de espera. Es solo un mensaje de espera: no se enseña lo que va razonando el modelo.
@@ -147,8 +171,7 @@
 
 ### Ejecución de las apps
 - Las apps de los usuarios se ejecutan **dentro de Yahoraque**.
-- **Dónde se ven ahora:** el dueño la ve en «Inicio», dentro de un marco, con el enlace «Crear o cambiar mi aplicación» encima. El admin la ve en la página «Usuarios» al elegir al usuario.
-- **Pendiente:** cada app tendrá su propia ruta, cuyo nombre es el **hash del nombre** del usuario (el usuario no lo elige). Llegará con el listado de apps públicas.
+- **Dónde se ven:** el dueño, en «Inicio»; el admin, en «Usuarios» al elegir al usuario; todos (si es pública), en su página `/app?app=<hash del dueño>`. Siempre dentro de un marco, debajo del título con su nombre.
 - Las apps se generan en Python con Streamlit. Pueden incluir HTML y JavaScript propios, que se muestran aislados (ver «Guardarraíles»).
 - **Las apps no recuerdan nada:** no guardan datos entre sesiones. Se avisa al usuario de esto durante el modo Analista.
 
@@ -166,6 +189,7 @@
      - `st` solo tiene las funciones permitidas, también en columnas, pestañas, formularios y demás contenedores.
      - Las claves de los widgets y `st.session_state` llevan el prefijo `app_<hash>_`, así que una app no puede leer ni cambiar el estado de Yahoraque (por ejemplo, el usuario conectado) ni el de otras apps.
      - `st.image`, `st.audio` y `st.video` solo aceptan direcciones web o datos, nunca rutas de ficheros del servidor.
+     - `st.html` no puede usar `unsafe_allow_javascript`, que ejecutaría JavaScript en la página de Yahoraque (podría robar la cookie de sesión).
      - El HTML/JavaScript propio (`st.components.v1.html`) se muestra en un marco con origen propio (URL `data:`): su JavaScript no puede leer ni manejar la página de Yahoraque de quien la está viendo.
 - Si una app que ya estaba guardada falla al ejecutarse, se muestra «La aplicación ha tenido un problema. Prueba a recargar la página.» y el error real va a los logs.
 - **Contenido:** no se generan apps de phishing, de suplantación de marcas o personas, ni con fines moralmente no deseables.
@@ -176,7 +200,7 @@
 - **Rama `datos`** (nombre configurable con `DATA_BRANCH`): contiene solo los datos de los usuarios. Yahoraque la lee y escribe a través de la API de GitHub; Streamlit no la despliega, así que guardar en ella no reinicia la plataforma.
   - Si la rama no existe, se crea sola, a partir de la rama principal del repositorio, la primera vez que se guarda algo.
   - El código de las apps de los usuarios se lee de esta rama en el momento de ejecutarlas, no de los ficheros desplegados.
-- Cada usuario tiene **una carpeta `users/<hash del nombre>/`** en la rama `datos`. Dentro se guardan su cuenta (`user.json`: nombre, hash del PIN y fecha de registro), sus requisitos (`requisitos.md`) y el código de su app.
+- Cada usuario tiene **una carpeta `users/<hash del nombre>/`** en la rama `datos`. Dentro se guardan su cuenta (`user.json`: nombre, hash del PIN y fecha de registro), sus requisitos (`requisitos.md`), el código de su app (`app.py`) y los datos de la app (`app.json`: nombre, si es pública y la frase «Para qué sirve»).
 - En desarrollo (`STORAGE_MODE=local`) la misma estructura se guarda en la carpeta `.data/` del disco, que está fuera de git.
 - Cada guardado es un commit, así que el historial de commits de la carpeta es el historial de versiones. Volver atrás es restaurar una versión anterior de esa carpeta.
 - Si dos guardados coinciden y chocan, se reintenta.
@@ -189,7 +213,7 @@
 - La app y sus requisitos solo se guardan si la nueva versión funciona. Si sigue fallando, se mantiene la última versión que funcionaba, los requisitos siguen pendientes en el chat y se muestra: «No hemos conseguido que la aplicación funcione. Si tenías una, sigue la anterior. Pulsa «¡Sí, adelante!» para intentarlo otra vez o cambia algo.»
 - Si la IA rechaza la app por su contenido: «No podemos construir esta aplicación porque no cumple las normas de Yahoraque.»
 - Si se agotan todos los modelos: «Los astros no están alineados, inténtalo más tarde.»
-- Si todo va bien: «¡Tu aplicación está lista!» con un enlace «Ver mi aplicación».
+- Si todo va bien: «¡Tu aplicación <nombre> está lista!» con un enlace «Ver mi aplicación».
 
 ### Uso de la IA
 - La elección del modelo y el cambio automático cuando falla se describen en la sección 4 («Elección del modelo»).
@@ -224,11 +248,17 @@ La app está bien si:
 - Un invitado ve el listado de apps públicas y puede abrirlas, pero no puede crear ni publicar.
 - Un usuario registrado solo puede modificar su propia app.
 - Con un PIN incorrecto no se puede entrar en la cuenta de otro usuario.
+- Tras entrar, al recargar la página se sigue dentro; tras pulsar «Salir», al recargar se ve la pantalla de acceso.
+- Una cookie de sesión modificada a mano, de hace más de 7 días o de un usuario borrado no da acceso.
 - Una app privada solo la ven su dueño y el admin.
 - Un usuario puede volver a una versión anterior de su app.
-- Un usuario puede borrar su app y su cuenta.
+- Un usuario puede borrar su app (su cuenta sigue y puede crear otra). Borrar su propia cuenta está pendiente.
+- Una app recién construida tiene un nombre de una sola palabra, solo letras, de 20 como mucho, y lo conserva al cambiarla desde el chat.
+- Una app nueva es privada: un invitado no la ve en «Apps públicas» ni puede abrirla con su enlace.
+- Al activar «Pública», la app aparece en «Apps públicas» y un invitado puede abrirla y usarla; al desactivarlo, deja de aparecer y su enlace muestra «Esta aplicación no existe o no es pública.».
+- Tras borrar su app, el usuario ve «Crear mi aplicación» en «Inicio» y la app desaparece de «Apps públicas».
 - El admin ve en la barra de la izquierda a todos los usuarios registrados; los demás no ven esa lista.
-- El admin puede abrir cualquier usuario y ver su aplicación (o sus requisitos, mientras no se construyan apps).
+- El admin puede abrir cualquier usuario y ver su aplicación (pública o privada), su nombre y sus requisitos.
 - Tras confirmar el borrado, el usuario desaparece de la lista, su carpeta ya no existe y no puede entrar con su nombre y PIN.
 - El código generado no consigue leer los secretos.
 - Al confirmar unos requisitos, se construye una app que aparece en «Inicio» del dueño y en «Usuarios» del admin.
@@ -258,13 +288,14 @@ La app está bien si:
 - **Sin límite de mensajes:** un único usuario muy activo puede agotar la cuota gratuita del día para todos.
 - **Historial de git:** al borrar una cuenta, sus versiones antiguas siguen en el historial del repositorio.
 - **Privacidad en la capa gratuita:** el proveedor de IA puede usar los datos enviados para entrenar sus modelos.
-- **Repositorio público (es una práctica de máster):** "privada" significa que la app no aparece ni se puede abrir desde Yahoraque, pero su código se puede leer en GitHub. Además, el nombre de cada usuario se lee en claro en su `user.json`. El código de los guardarraíles también es público. Se avisa al usuario de que no ponga información sensible en su app.
+- **Repositorio público (es una práctica de máster):** "privada" significa que la app no aparece ni se puede abrir desde Yahoraque, pero su código, su nombre y si es pública se pueden leer en GitHub. Además, el nombre de cada usuario se lee en claro en su `user.json`. El código de los guardarraíles también es público. Se avisa al usuario de que no ponga información sensible en su app.
+- **Sesión recordada:** quien use el mismo navegador entra como el último usuario durante 7 días, hasta que alguien pulse «Salir». Si alguien roba la cookie, puede entrar con ella hasta que caduque: no hay forma de cerrar a distancia la sesión de un usuario sin borrarlo.
 - **PIN corto:** un PIN de pocos dígitos se puede adivinar probando muchas combinaciones desde la pantalla de acceso. Para una práctica se acepta sin límite de intentos.
 - **Muchas llamadas a GitHub:** como los datos están en la rama `datos` y no en disco, cada lectura y cada guardado es una llamada a la API de GitHub, que tiene un límite por hora. Con muchos usuarios a la vez, o un admin con muchos usuarios en la lista, se puede llegar a ese límite.
 
 ## 12. Por decidir
 
-- **Título visible en el listado público.** El hash no es legible. ¿Se muestra un título generado por la IA a partir de los requerimientos?
+- **Borrar su propia cuenta:** la tabla de permisos lo permitía al usuario, pero de momento solo lo hace el admin. ¿Se añade un botón «Borrar mi cuenta»?
 
 ## 13. Despliegue
 

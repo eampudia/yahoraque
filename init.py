@@ -3,6 +3,7 @@
 Access with name + PIN, guest or admin.
 """
 
+import json
 import logging
 
 import streamlit as st
@@ -17,6 +18,8 @@ import waiting
 
 ANALYST_URL_PATH = "mi-app"
 USERS_URL_PATH = "usuarios"
+PUBLIC_URL_PATH = "publicas"
+VIEW_URL_PATH = "app"
 ASTROS_MESSAGE = "Los astros no están alineados, inténtalo más tarde."
 BUILD_MESSAGES = {
     "ai": ASTROS_MESSAGE,
@@ -25,6 +28,7 @@ BUILD_MESSAGES = {
     "rejected": "No podemos construir esta aplicación porque no cumple las normas de Yahoraque.",
     "error": "No hemos podido guardar tu aplicación. Inténtalo de nuevo en un rato.",
 }
+SESSION_COOKIE = "yahoraque_sesion"
 ROLE_LABELS = {
     auth.ROLE_GUEST: "invitado",
     auth.ROLE_USER: "usuario",
@@ -32,9 +36,36 @@ ROLE_LABELS = {
 }
 
 
+def start_session(user):
+    st.session_state.user = user
+    st.session_state.remember_session = True
+
+
+def set_session_cookie(value, max_age):
+    # Streamlit can read cookies but not write them: the browser does it.
+    secure = "(location.protocol === 'https:' ? '; Secure' : '')"
+    st.html(
+        f"<script>document.cookie = {json.dumps(f'{SESSION_COOKIE}={value}')} + "
+        f"'; Max-Age={max_age}; Path=/; SameSite=Strict' + {secure};</script>",
+        unsafe_allow_javascript=True,
+    )
+
+
+def restored_user():
+    """The user saved in the session cookie, if it is still valid."""
+    token = st.context.cookies.get(SESSION_COOKIE)
+    if not token:
+        return None
+    try:
+        return auth.restore_session(token)
+    except Exception:
+        logging.exception("Restoring session failed")
+        return None
+
+
 def try_access(action, *args):
     try:
-        st.session_state.user = action(*args)
+        start_session(action(*args))
     except auth.LoginError as error:
         st.error(str(error))
         return
@@ -75,21 +106,111 @@ def login_page():
 
     st.divider()
     if st.button("Entrar como invitado"):
-        st.session_state.user = auth.guest()
+        start_session(auth.guest())
         st.rerun()
+
+
+def app_meta(uid):
+    """The app's name and visibility, or None if there is no app or it cannot be read."""
+    try:
+        return apps.load_meta(uid)
+    except Exception:
+        logging.exception("Loading app data failed")
+        st.error("No hemos podido cargar la aplicación. Inténtalo de nuevo en un rato.")
+        return None
 
 
 def home_page():
     user = st.session_state.user
-    if user["role"] == auth.ROLE_GUEST:
-        st.title("Yahoraque")
-        st.write("Aquí verás el listado de aplicaciones públicas.")
-        return
-
-    st.page_link(my_app_page, label="Crear o cambiar mi aplicación", icon="💬")
-    if not show_app(user["id"]):
+    meta = app_meta(user["id"])
+    if meta is None:
         st.title("Yahoraque")
         st.write(f"Hola, {user['name']}. Todavía no tienes aplicación: cuéntanos qué quieres.")
+        st.page_link(my_app_page, label="Crear mi aplicación", icon="💬")
+        return
+
+    st.title(meta["name"])
+    change, share = st.columns(2)
+    change.page_link(my_app_page, label="Cambiar mi aplicación", icon="💬")
+    public = st.toggle(
+        "Pública",
+        value=meta["public"],
+        help="Aparece en «Apps públicas» y la puede usar cualquiera, también sin cuenta.",
+    )
+    if public != meta["public"]:
+        try:
+            apps.set_public(user["id"], public)
+        except Exception:
+            logging.exception("Changing visibility failed")
+            st.error("No hemos podido cambiarlo. Inténtalo de nuevo en un rato.")
+        st.rerun()
+    if meta["public"]:
+        share.page_link(
+            view_page, label="Enlace para compartir", icon="🔗", query_params={"app": user["id"]}
+        )
+
+    show_app(user["id"])
+    delete_my_app(user["id"], meta["name"])
+
+
+def delete_my_app(uid, name):
+    if not st.session_state.get("confirm_delete_app"):
+        if st.button("Borrar mi aplicación"):
+            st.session_state.confirm_delete_app = True
+            st.rerun()
+        return
+
+    st.warning(f"Se borrará **{name}** y lo que pediste. Tu cuenta sigue. No se puede deshacer.")
+    yes, cancel = st.columns(2)
+    if yes.button("Sí, borrar", type="primary", width="stretch"):
+        try:
+            apps.delete(uid)
+        except Exception:
+            logging.exception("Deleting app failed")
+            st.error("No hemos podido borrar la aplicación. Inténtalo de nuevo en un rato.")
+            return
+        for key in ("confirm_delete_app", "saved_requirements", "chat", "pending_requirements"):
+            st.session_state.pop(key, None)
+        st.toast(f"{name} borrada.")
+        st.rerun()
+    if cancel.button("Cancelar", width="stretch"):
+        del st.session_state.confirm_delete_app
+        st.rerun()
+
+
+def public_page():
+    st.title("Apps públicas")
+    try:
+        public = apps.public_apps()
+    except Exception:
+        logging.exception("Listing public apps failed")
+        st.error("No hemos podido cargar las aplicaciones. Inténtalo de nuevo en un rato.")
+        return
+    if not public:
+        st.write("Todavía no hay aplicaciones públicas.")
+    for app in public:
+        with st.container(border=True):
+            st.subheader(app["name"])
+            if app["description"]:
+                st.write(app["description"])
+            st.page_link(view_page, label="Abrir", icon="🚀", query_params={"app": app["id"]})
+
+
+def app_view_page():
+    uid = st.query_params.get("app")
+    try:
+        allowed = bool(uid) and apps.can_view(uid, st.session_state.user)
+    except Exception:
+        logging.exception("Loading app data failed")
+        allowed = False
+    if not allowed:
+        # Same message for private and missing apps, so it does not reveal which exist.
+        st.title("Aplicación no disponible")
+        st.write("Esta aplicación no existe o no es pública.")
+        st.page_link(public_list_page, label="Ver las apps públicas", icon="🔎")
+        return
+    st.title(apps.load_meta(uid)["name"])
+    show_app(uid)
 
 
 def show_app(uid):
@@ -106,14 +227,10 @@ def show_app(uid):
     return True
 
 
-def requirements_path(uid):
-    return f"{auth.USERS_DIR}/{uid}/requisitos.md"
-
-
 def saved_requirements(uid):
     # Read once per session: in production each read is a GitHub API call.
     if "saved_requirements" not in st.session_state:
-        st.session_state.saved_requirements = storage.read_file(requirements_path(uid))
+        st.session_state.saved_requirements = storage.read_file(apps.requirements_path(uid))
     return st.session_state.saved_requirements
 
 
@@ -128,9 +245,9 @@ def build_app(uid, requirements):
     Nothing is saved unless the new app works, so the previous one stays.
     """
     try:
-        code = waiting.run(developer.build, requirements, apps.load(uid))
-        apps.save(uid, code)
-        storage.write_file(requirements_path(uid), requirements, f"Requisitos {uid}")
+        meta = apps.load_meta(uid) or {}
+        code, name = waiting.run(developer.build, requirements, apps.load(uid), meta.get("name"))
+        apps.save(uid, code, requirements, name, meta.get("public", False))
     except llm.AIUnavailable:
         return "ai"
     except developer.BuildRejected:
@@ -179,7 +296,7 @@ def analyst_page():
 
     build_result = st.session_state.pop("build_result", None)
     if build_result == "ok":
-        st.success("¡Tu aplicación está lista!")
+        st.success(f"¡Tu aplicación {apps.load_meta(user['id'])['name']} está lista!")
         st.page_link(home, label="Ver mi aplicación", icon="🚀")
     elif build_result:
         st.error(BUILD_MESSAGES[build_result])
@@ -229,11 +346,15 @@ def users_page():
     if user["created_at"]:
         st.caption(f"Registrado el {user['created_at'][:10]}")
 
-    st.subheader("Su aplicación")
+    meta = app_meta(user["id"])
+    if meta:
+        st.subheader(f"Su aplicación: {meta['name']} ({'pública' if meta['public'] else 'privada'})")
+    else:
+        st.subheader("Su aplicación")
     if not show_app(user["id"]):
         st.write("Todavía no tiene aplicación.")
     try:
-        requirements = storage.read_file(requirements_path(user["id"]))
+        requirements = storage.read_file(apps.requirements_path(user["id"]))
     except Exception:
         logging.exception("Reading requirements failed")
         st.error("No hemos podido leer sus requisitos. Inténtalo de nuevo en un rato.")
@@ -254,7 +375,7 @@ def users_page():
     if yes.button("Sí, borrar", type="primary", width="stretch"):
         try:
             auth.delete_user(user["id"])
-            apps.load.clear()
+            apps.clear_caches()
         except Exception:
             logging.exception("Deleting user failed")
             st.error("No hemos podido borrar el usuario. Inténtalo de nuevo en un rato.")
@@ -287,16 +408,31 @@ def users_sidebar():
 
 
 user = st.session_state.get("user")
+# After "Salir" the old cookie is still in this connection's headers: ignore it.
+if user is None and not st.session_state.get("logged_out"):
+    user = restored_user()
+    if user:
+        st.session_state.user = user
 if user is None:
+    if st.session_state.get("logged_out"):
+        set_session_cookie("", 0)
     login_page()
     st.stop()
+if st.session_state.pop("remember_session", False):
+    set_session_cookie(auth.session_token(user), auth.SESSION_DAYS * 24 * 60 * 60)
 
+is_guest = user["role"] == auth.ROLE_GUEST
+home = st.Page(home_page, title="Inicio", default=not is_guest)
 my_app_page = st.Page(analyst_page, title="Mi aplicación", url_path=ANALYST_URL_PATH)
+public_list_page = st.Page(
+    public_page, title="Apps públicas", url_path=PUBLIC_URL_PATH, default=is_guest
+)
+# Opened from links with ?app=<user id>, not from the menu.
+view_page = st.Page(
+    app_view_page, title="Aplicación", url_path=VIEW_URL_PATH, visibility="hidden"
+)
 admin_users_page = st.Page(users_page, title="Usuarios", url_path=USERS_URL_PATH)
-home = st.Page(home_page, title="Inicio", default=True)
-pages = [home]
-if user["role"] != auth.ROLE_GUEST:
-    pages.append(my_app_page)
+pages = [public_list_page, view_page] if is_guest else [home, my_app_page, public_list_page, view_page]
 if user["role"] == auth.ROLE_ADMIN:
     pages.append(admin_users_page)
 navigation = st.navigation(pages)
@@ -306,6 +442,7 @@ with st.sidebar:
     st.write(f"**{user['name']}** · {ROLE_LABELS[user['role']]}")
     if st.button("Salir"):
         st.session_state.clear()
+        st.session_state.logged_out = True
         st.rerun()
     if user["role"] == auth.ROLE_ADMIN:
         st.divider()

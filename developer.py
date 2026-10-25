@@ -3,6 +3,7 @@
 The whole app is written in one request, so all its code comes from the same
 model. Then it goes through the guardrails and a test start; if either fails,
 the model gets the error and rewrites the app, up to FIX_ATTEMPTS times.
+In the same answer the model invents the app's name: one made-up word.
 """
 
 import logging
@@ -14,13 +15,20 @@ import llm
 
 FIX_ATTEMPTS = 2
 CODE_PATTERN = re.compile(r"```(?:python)?\s*\n(.*?)```", re.DOTALL)
+NAME_PATTERN = re.compile(r"^\s*NOMBRE:\s*(\S+)", re.MULTILINE)
+NAME_MAX_LENGTH = 20
+DEFAULT_NAME = "Miapp"
 
 SYSTEM_PROMPT = f"""Eres un programador senior de Python y Streamlit en Yahoraque, una plataforma \
 que construye aplicaciones web sencillas para personas sin conocimientos técnicos. Escribes la \
 aplicación completa a partir de los requisitos del cliente.
 
 Cómo responder:
-- Devuelve solo el código completo de la aplicación, en un único bloque ```python```, sin \
+- Primera línea: `NOMBRE: <palabra>`, con un nombre para la aplicación: una sola palabra \
+inventada, fácil de pronunciar y de recordar, inspirada en los requisitos (por ejemplo, para un \
+contador de vasos de agua, "Aguatín"). Solo letras, como mucho {NAME_MAX_LENGTH}, sin espacios \
+ni números.
+- Después, el código completo de la aplicación en un único bloque ```python```, sin \
 explicaciones antes ni después.
 - Todo lo que vea el usuario, en el idioma de los requisitos (por defecto, español), con \
 frases sencillas.
@@ -64,19 +72,31 @@ def extract_code(answer):
     return (match.group(1) if match else answer).strip() + "\n"
 
 
+def extract_name(answer):
+    """The made-up name, cleaned to letters only."""
+    match = NAME_PATTERN.search(answer)
+    letters = "".join(char for char in match.group(1) if char.isalpha()) if match else ""
+    return letters[:NAME_MAX_LENGTH].capitalize() or DEFAULT_NAME
+
+
 def find_problem(code):
     """The guardrails' objection or the start error, or None if the app works."""
     return guardrails.check(code) or app_check.test_run(code)
 
 
-def build(requirements, previous_code=None):
-    """Return the code of a working app. Raises llm.AIUnavailable, BuildFailed or BuildRejected."""
+def build(requirements, previous_code=None, name=None):
+    """Return (code, name) of a working app. Raises llm.AIUnavailable, BuildFailed or BuildRejected.
+
+    An app that already has a name keeps it.
+    """
     request = f"Requisitos del cliente:\n{requirements}"
     if previous_code:
         request += (
             "\n\nEsta es la versión actual de su aplicación. Cámbiala para que cumpla los "
             f"requisitos y devuelve el código completo:\n```python\n{previous_code}```"
         )
+    if name:
+        request += f"\n\nLa aplicación ya se llama {name}: usa NOMBRE: {name}."
     messages = [{"role": "user", "content": request}]
 
     for attempt in range(1 + FIX_ATTEMPTS):
@@ -86,7 +106,7 @@ def build(requirements, previous_code=None):
         code = extract_code(answer)
         problem = find_problem(code)
         if problem is None:
-            return code
+            return code, name or extract_name(answer)
         logging.warning("Build attempt %s failed: %s", attempt + 1, problem)
         messages += [
             {"role": "assistant", "content": answer},
