@@ -11,6 +11,7 @@ import analyst
 import auth
 import llm
 import storage
+import waiting
 
 ANALYST_URL_PATH = "mi-app"
 USERS_URL_PATH = "usuarios"
@@ -141,18 +142,21 @@ def analyst_page():
             "La construcción automática de la aplicación llegará muy pronto."
         )
 
+    if st.session_state.pop("ai_failed", False):
+        st.error(ASTROS_MESSAGE)
+
     prompt = st.chat_input("Escribe aquí…")
     if prompt:
         st.session_state.pop("pending_requirements", None)
         st.session_state.chat.append({"role": "user", "content": prompt})
         st.chat_message("user").write(prompt)
-        with st.spinner("Pensando…"):
-            try:
-                text, requirements = analyst.reply(st.session_state.chat)
-            except llm.AIUnavailable:
-                st.session_state.chat.pop()
-                st.error(ASTROS_MESSAGE)
-                return
+        try:
+            text, requirements = waiting.run(analyst.reply, st.session_state.chat)
+        except llm.AIUnavailable:
+            # Rerun so the unanswered message also disappears from the screen.
+            st.session_state.chat.pop()
+            st.session_state.ai_failed = True
+            st.rerun()
         st.session_state.chat.append({"role": "assistant", "content": text})
         if requirements:
             st.session_state.pending_requirements = requirements
