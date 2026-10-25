@@ -1,8 +1,8 @@
-Título: Calculadora Manga Kiwi
-Para qué sirve: Una calculadora compacta y divertida con estética de anime japonés y colores de kiwi para hacer operaciones básicas.
+Título: Calculadora Manga Pastel
+Para qué sirve: Una calculadora completa con un adorable diseño de estilo manga japonés y colores pasteles.
 Qué podrá hacer el usuario:
-- Hacer sumas, restas, multiplicaciones, divisiones y calcular porcentajes.
-- Ver los números y resultados con un aspecto visual de cómic japonés.
-- Pulsar botones redondeados y de diseño compacto.
-Cómo se verá: Pantalla y botones con estética de manga (líneas marcadas, blanco y negro con toques de verde kiwi) y tipografía tipo cómic.
-Qué no hará: No recordará el historial de operaciones anteriores al cerrar la página.
+- Realizar operaciones matemáticas básicas (sumar, restar, multiplicar y dividir).
+- Calcular porcentajes y usar memoria si es necesario.
+- Ver el resultado en una pantalla bonita y clara con estilo de cómic.
+Cómo se verá: Interfaz de una sola pantalla con tonos pasteles suaves (rosa, lila, celeste), botones redondeados y pequeños detalles gráficos de inspiración anime.
+Qué no hará: No recordará el historial de operaciones anteriores si cierras o recargas la página.
