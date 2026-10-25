@@ -5,6 +5,7 @@ and apps stored as text) is kept as an admin-only page.
 """
 
 import hashlib
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -16,6 +17,15 @@ import storage
 ROOT = Path(__file__).parent
 APPS_DIR = ROOT / "spike_apps"
 PUSH_TEST_PATH = "spike/push_test.txt"
+SECRET_NAMES = [
+    "GOOGLE_API_KEY",
+    "GITHUB_TOKEN",
+    "GITHUB_REPO",
+    "ADMIN_NAME",
+    "ADMIN_PASSWORD",
+    "PIN_SECRET",
+    "STORAGE_MODE",
+]
 ROLE_LABELS = {
     auth.ROLE_GUEST: "invitado",
     auth.ROLE_USER: "usuario",
@@ -40,6 +50,8 @@ def try_access(action, *args):
         st.error(str(error))
         return
     except Exception:
+        # The user sees a friendly message; the real cause goes to the logs.
+        logging.exception("Access failed")
         st.error("No hemos podido comprobar tus datos. Inténtalo de nuevo en un rato.")
         return
     st.rerun()
@@ -89,6 +101,10 @@ def home_page():
 
 def spike_page():
     st.title("Prueba técnica (fase 0)")
+
+    st.header("0. Secretos configurados")
+    for name in SECRET_NAMES:
+        st.write("✅" if storage.get_secret(name) else "❌", f"`{name}`")
 
     st.header("1. ¿Qué pasa al hacer push a master?")
     st.session_state.setdefault("session_started_at", now())
