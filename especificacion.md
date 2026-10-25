@@ -23,9 +23,24 @@
 
 ## 4. La pieza de IA
 
-- **Opción elegida:** Google Gemini, capa gratuita.
+- **Opción elegida:** modelos Gemini de Google, capa gratuita, usados con la API de Google (Gemini API) y su librería oficial para Python.
 - **Por qué:** Permite desarrollar la aplicación de forma gratuita y es la opción gratuita que mejor se comporta.
 - **El usuario no sabe qué modelo se usa.** La interfaz nunca menciona Gemini, para poder cambiar de proveedor sin afectar al usuario.
+
+### Elección del modelo
+1. **Listar:** el sistema pide a la API de Google la lista de modelos disponibles para la clave y se queda solo con los que pueden generar texto. La lista se guarda en memoria y se refresca cada cierto tiempo (por ejemplo, cada hora), no en cada mensaje.
+2. **Ordenar de más a menos potente:** la API no indica qué modelo es más potente, así que el orden se calcula a partir del nombre:
+   - Primero la versión más alta (por ejemplo, 2.5 antes que 2.0).
+   - Dentro de la misma versión: `pro` antes que `flash`, y `flash` antes que `flash-lite`.
+   - Se descartan los modelos que no sirven para conversar o generar código (embeddings, imagen, audio, etc.).
+3. **Probar en orden:** cada petición se envía al primer modelo de la lista. Si falla (cuota agotada, modelo no disponible, error temporal), se reintenta **la misma petición** con el siguiente, sin mostrar nada al usuario.
+4. **Recordar los que fallan:** un modelo que falla se aparta durante un tiempo, para no perder tiempo probándolo en cada mensaje:
+   - Sin cuota diaria, o no disponible para la clave: 24 horas.
+   - Límite por minuto: 1 minuto.
+   - Saturado, error del servidor o sin respuesta en 60 segundos: 5 minutos.
+   - Error en la petición (probablemente un fallo nuestro): no se aparta.
+5. **Si fallan todos:** se muestra "Los astros no están alineados, inténtalo más tarde."
+6. **Registro interno:** qué modelo respondió y cuáles fallaron se anota en los logs, nunca en la pantalla del usuario.
 - **Instrucciones para el modelo (system prompt):**
   - **Modo Analista:** se comporta como un analista tratando con un cliente. Hace las preguntas necesarias y, cuando ve que puede diseñar algo, muestra los requerimientos en lenguaje no técnico y pregunta si se empieza a construir.
   - **Modo Desarrollador:** se comporta como un programador senior.
@@ -54,8 +69,16 @@
 - El PIN nunca se guarda en claro. Se guarda su hash, combinado con un secreto (`PIN_SECRET`), para que no se pueda adivinar a partir del repositorio público.
 - **PIN olvidado:** no hay recuperación. El admin puede borrar el usuario para que vuelva a registrarse.
 - **Admin:** entra con el nombre `ADMIN_NAME` y la contraseña `ADMIN_PASSWORD`, ambos en los secretos.
+- El nombre se guarda tal cual lo escribió el usuario (sin espacios al principio o al final) en su `user.json`, para que el admin pueda reconocerlo. Los usuarios registrados antes de este cambio aparecen con su hash en lugar del nombre.
 - Se recomienda al usuario usar un alias en lugar de su nombre real.
 - **"Privada" significa que solo se puede usar desde Yahoraque por su dueño**, no que el código sea secreto. El repositorio de GitHub es público (ver sección 11).
+
+### Gestión de usuarios (solo admin)
+- **Listado:** cuando entra el admin, la barra de la izquierda muestra, debajo del menú, todos los usuarios registrados ordenados por nombre (sin distinguir mayúsculas). El admin no aparece en la lista. Los invitados y los usuarios no ven esta lista.
+- **Detalle:** al pulsar un usuario se abre la página «Usuarios» con su nombre, la fecha de registro y su aplicación. Mientras no exista la construcción de apps, se muestran sus requisitos guardados, o «Todavía no ha pedido ninguna aplicación» si no tiene.
+- **Borrado:** en esa página, «Borrar usuario» pide confirmación («Sí, borrar» / «Cancelar»). Al confirmar se elimina la carpeta del usuario entera (cuenta, requisitos y app) y desaparece de la lista. Con ese nombre se puede volver a registrar cualquiera.
+- Si falla la lectura o el borrado, se muestra un mensaje sencillo y el error real va a los logs.
+- La lista se guarda en memoria hasta 5 minutos para no hacer una llamada a GitHub por usuario en cada clic. Se refresca al momento cuando alguien se registra o se borra un usuario.
 
 ## 6. Flujo del usuario
 
@@ -81,24 +104,26 @@
 - **Contenido:** no se generan apps de phishing, de suplantación de marcas o personas, ni con fines moralmente no deseables.
 
 ### Almacenamiento y versiones
-- El código de las apps se guarda en el **mismo repositorio de GitHub que Yahoraque**. El acceso se hace con un token guardado en los secretos.
-- **Rama `master`:** es la que despliega Streamlit Cloud. Contiene el código de Yahoraque más las carpetas de las apps de los usuarios.
-- Cada usuario tiene **una carpeta cuyo nombre es el hash de su nombre**. Dentro se guardan el código de su app y el hash de su PIN.
+- Los datos de los usuarios se guardan en el **mismo repositorio de GitHub que Yahoraque**, pero en una rama aparte. El acceso se hace con un token guardado en los secretos.
+- **Rama `master`:** es la que despliega Streamlit Cloud. Contiene solo el código de Yahoraque, nunca datos de usuarios.
+- **Rama `datos`** (nombre configurable con `DATA_BRANCH`): contiene solo los datos de los usuarios. Yahoraque la lee y escribe a través de la API de GitHub; Streamlit no la despliega, así que guardar en ella no reinicia la plataforma.
+  - Si la rama no existe, se crea sola, a partir de la rama principal del repositorio, la primera vez que se guarda algo.
+  - El código de las apps de los usuarios se lee de esta rama en el momento de ejecutarlas, no de los ficheros desplegados.
+- Cada usuario tiene **una carpeta `users/<hash del nombre>/`** en la rama `datos`. Dentro se guardan su cuenta (`user.json`: nombre, hash del PIN y fecha de registro), sus requisitos (`requisitos.md`) y el código de su app.
+- En desarrollo (`STORAGE_MODE=local`) la misma estructura se guarda en la carpeta `.data/` del disco, que está fuera de git.
 - Cada guardado es un commit, así que el historial de commits de la carpeta es el historial de versiones. Volver atrás es restaurar una versión anterior de esa carpeta.
 - Si dos guardados coinciden y chocan, se reintenta.
 - Al borrar una cuenta o app se elimina su carpeta, pero **no se reescribe el historial de git**: las versiones antiguas siguen existiendo.
-- **Rama `ORIGINAL`:** contiene el código "limpio" de Yahoraque, sin ninguna aplicación de usuario. Sirve para hacer un reset total de la plataforma.
-
+- **Reset total de la plataforma:** se borra la rama `datos`. Desaparecen todos los usuarios y sus apps; el código de Yahoraque no cambia.
 ### Apps rotas
 - Antes de dejar visible una nueva versión, se comprueba que arranca sin errores.
 - Si falla, la IA intenta arreglarla **hasta 2 veces**.
 - Si sigue fallando, se mantiene la última versión que funcionaba y se avisa al usuario.
 
 ### Uso de la IA
-- Un módulo consulta los modelos disponibles de la capa gratuita y usa el mejor disponible. Cuando se agota su cuota, pasa al siguiente.
-- Una misma generación de código usa siempre el mismo modelo, para evitar código inconsistente.
+- La elección del modelo y el cambio automático cuando falla se describen en la sección 4 («Elección del modelo»).
+- Una app se genera en una sola petición, para que todo su código salga del mismo modelo. Si esa petición falla, se repite entera con el siguiente modelo.
 - No hay límite de mensajes por usuario.
-- Si se agotan todos los modelos, se muestra: **"Los astros no están alineados, inténtalo más tarde."**
 
 ## 8. Restricciones
 
@@ -114,6 +139,7 @@
   | `ADMIN_PASSWORD` | Contraseña del admin |
   | `PIN_SECRET` | Cadena aleatoria que se combina con los PIN antes de guardar su hash |
   | `STORAGE_MODE` | `local` (guarda en disco, para desarrollo) o `github` (producción) |
+  | `DATA_BRANCH` | Rama donde se guardan los datos de los usuarios (por defecto, `datos`) |
 
   En local se leen de `.env`. En producción, de los secretos de Streamlit.
 - Sin datos personales reales. Las carpetas usan el hash del nombre y se recomienda usar un alias.
@@ -130,7 +156,13 @@ La app está bien si:
 - Una app privada solo la ven su dueño y el admin.
 - Un usuario puede volver a una versión anterior de su app.
 - Un usuario puede borrar su app y su cuenta.
+- El admin ve en la barra de la izquierda a todos los usuarios registrados; los demás no ven esa lista.
+- El admin puede abrir cualquier usuario y ver su aplicación (o sus requisitos, mientras no se construyan apps).
+- Tras confirmar el borrado, el usuario desaparece de la lista, su carpeta ya no existe y no puede entrar con su nombre y PIN.
 - El código generado no consigue leer los secretos.
+- Registrarse, guardar requisitos o borrar un usuario no cambia la rama `master` ni reinicia Yahoraque.
+- Con la rama `datos` sin crear, el primer guardado funciona y la crea.
+- Si el modelo más potente falla, el usuario recibe la respuesta de otro modelo sin ver ningún error.
 - Cuando se agota la IA, aparece el mensaje "Los astros no están alineados, inténtalo más tarde."
 
 ## 10. Fuera de alcance (por ahora)
@@ -145,9 +177,9 @@ La app está bien si:
 - **Sin límite de mensajes:** un único usuario muy activo puede agotar la cuota gratuita del día para todos.
 - **Historial de git:** al borrar una cuenta, sus versiones antiguas siguen en el historial del repositorio.
 - **Privacidad en la capa gratuita:** el proveedor de IA puede usar los datos enviados para entrenar sus modelos.
-- **Repositorio público (es una práctica de máster):** "privada" significa que la app no aparece ni se puede abrir desde Yahoraque, pero su código se puede leer en GitHub. Quien conozca el nombre de un usuario puede calcular el hash y encontrar su carpeta. El código de los guardarraíles también es público. Se avisa al usuario de que no ponga información sensible en su app.
+- **Repositorio público (es una práctica de máster):** "privada" significa que la app no aparece ni se puede abrir desde Yahoraque, pero su código se puede leer en GitHub. Además, el nombre de cada usuario se lee en claro en su `user.json`. El código de los guardarraíles también es público. Se avisa al usuario de que no ponga información sensible en su app.
 - **PIN corto:** un PIN de pocos dígitos se puede adivinar probando muchas combinaciones desde la pantalla de acceso. Para una práctica se acepta sin límite de intentos.
-- **Guardar en `master`:** cada guardado de una app es un push a la rama que despliega Streamlit Cloud, lo que puede provocar que Yahoraque se actualice o reinicie para todos los usuarios conectados. Hay que comprobarlo con una prueba al principio del desarrollo.
+- **Muchas llamadas a GitHub:** como los datos están en la rama `datos` y no en disco, cada lectura y cada guardado es una llamada a la API de GitHub, que tiene un límite por hora. Con muchos usuarios a la vez, o un admin con muchos usuarios en la lista, se puede llegar a ese límite.
 
 ## 12. Por decidir
 

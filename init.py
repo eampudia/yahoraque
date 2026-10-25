@@ -1,46 +1,25 @@
 """Yahoraque: entry point.
 
-Access with name + PIN, guest or admin. The phase 0 spike (push to master
-and apps stored as text) is kept as an admin-only page.
+Access with name + PIN, guest or admin.
 """
 
-import hashlib
 import logging
-from datetime import datetime, timezone
-from pathlib import Path
 
 import streamlit as st
 
+import analyst
 import auth
+import llm
 import storage
 
-ROOT = Path(__file__).parent
-APPS_DIR = ROOT / "spike_apps"
-PUSH_TEST_PATH = "spike/push_test.txt"
-SECRET_NAMES = [
-    "GOOGLE_API_KEY",
-    "GITHUB_TOKEN",
-    "GITHUB_REPO",
-    "ADMIN_NAME",
-    "ADMIN_PASSWORD",
-    "PIN_SECRET",
-    "STORAGE_MODE",
-]
+ANALYST_URL_PATH = "mi-app"
+USERS_URL_PATH = "usuarios"
+ASTROS_MESSAGE = "Los astros no están alineados, inténtalo más tarde."
 ROLE_LABELS = {
     auth.ROLE_GUEST: "invitado",
     auth.ROLE_USER: "usuario",
     auth.ROLE_ADMIN: "admin",
 }
-
-
-def now():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-
-
-@st.cache_resource
-def server_started_at():
-    # Cached once per server process: if this changes, the server restarted.
-    return now()
 
 
 def try_access(action, *args):
@@ -97,72 +76,167 @@ def home_page():
         st.write("Aquí verás el listado de aplicaciones públicas.")
     else:
         st.write(f"Hola, {user['name']}. Aquí verás tu aplicación.")
+        st.page_link(my_app_page, label="Crear o cambiar mi aplicación", icon="💬")
 
 
-def spike_page():
-    st.title("Prueba técnica (fase 0)")
+def requirements_path(uid):
+    return f"{auth.USERS_DIR}/{uid}/requisitos.md"
 
-    st.header("0. Secretos configurados")
-    for name in SECRET_NAMES:
-        st.write("✅" if storage.get_secret(name) else "❌", f"`{name}`")
 
-    st.header("1. ¿Qué pasa al hacer push a master?")
-    st.session_state.setdefault("session_started_at", now())
-    st.session_state.setdefault("clicks", 0)
+def saved_requirements(uid):
+    # Read once per session: in production each read is a GitHub API call.
+    if "saved_requirements" not in st.session_state:
+        st.session_state.saved_requirements = storage.read_file(requirements_path(uid))
+    return st.session_state.saved_requirements
 
-    disk_file = ROOT / PUSH_TEST_PATH
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Servidor arrancado", server_started_at())
-    col2.metric("Sesión iniciada", st.session_state.session_started_at)
-    col3.metric("Clics en esta sesión", st.session_state.clicks)
-    st.write(
-        "Contenido en disco de",
-        f"`{PUSH_TEST_PATH}`:",
-        disk_file.read_text() if disk_file.exists() else "(no existe)",
-    )
 
-    if st.button("Sumar un clic"):
-        st.session_state.clicks += 1
-        st.rerun()
+def show_requirements(requirements):
+    with st.container(border=True):
+        st.markdown(requirements.replace("\n", "  \n"))
 
-    if st.button("Hacer push de prueba a master"):
-        try:
-            sha = storage.push_file(PUSH_TEST_PATH, f"push {now()}\n", "spike: push test")
-            st.success(f"Push hecho. Commit {sha[:7]}.")
-        except Exception as error:
-            st.error(f"El push ha fallado: {error}")
 
-    st.header("2. Crear una app guardada como texto")
-    with st.form("new_app"):
-        name = st.text_input("Nombre del usuario", value="prueba")
-        code = st.text_area(
-            "Código de la app",
-            value='st.title("Hola")\nst.write("Soy una app generada.")',
-            height=150,
-        )
-        push = st.checkbox("Subirla también a GitHub")
-        if st.form_submit_button("Guardar app"):
-            app_id = hashlib.sha256(name.strip().lower().encode()).hexdigest()[:12]
-            APPS_DIR.mkdir(exist_ok=True)
-            (APPS_DIR / f"{app_id}.py").write_text(code)
-            if push:
-                try:
-                    storage.push_file(f"spike_apps/{app_id}.py", code, f"spike: app {app_id}")
-                except Exception as error:
-                    st.error(f"El push ha fallado: {error}")
-            st.session_state.saved_app = app_id
+def analyst_page():
+    user = st.session_state.user
+    st.title("Mi aplicación")
+
+    saved = saved_requirements(user["id"])
+    if saved:
+        with st.expander("Lo que ya me pediste"):
+            show_requirements(saved)
+
+    st.session_state.setdefault("chat", [])
+    st.chat_message("assistant").write(analyst.GREETING)
+    for message in st.session_state.chat:
+        st.chat_message(message["role"]).write(message["content"])
+
+    pending = st.session_state.get("pending_requirements")
+    if pending:
+        show_requirements(pending)
+        st.write("¿Empezamos a construirla?")
+        yes, change = st.columns(2)
+        if yes.button("¡Sí, adelante!", type="primary", width="stretch"):
+            try:
+                storage.write_file(
+                    requirements_path(user["id"]), pending, f"Requisitos {user['id']}"
+                )
+            except Exception:
+                logging.exception("Saving requirements failed")
+                st.error("No hemos podido guardar tus requisitos. Inténtalo de nuevo en un rato.")
+                return
+            st.session_state.saved_requirements = pending
+            st.session_state.chat = []
+            del st.session_state.pending_requirements
+            st.session_state.requirements_saved = True
+            st.rerun()
+        if change.button("Quiero cambiar algo", width="stretch"):
+            del st.session_state.pending_requirements
+            st.session_state.chat.append(
+                {"role": "assistant", "content": "Claro, dime qué quieres cambiar."}
+            )
             st.rerun()
 
-    if "saved_app" in st.session_state:
-        st.success(f"App guardada en la ruta `/{st.session_state.saved_app}`.")
+    if st.session_state.pop("requirements_saved", False):
+        st.success(
+            "¡Guardado! Ya tengo todo lo necesario. "
+            "La construcción automática de la aplicación llegará muy pronto."
+        )
+
+    prompt = st.chat_input("Escribe aquí…")
+    if prompt:
+        st.session_state.pop("pending_requirements", None)
+        st.session_state.chat.append({"role": "user", "content": prompt})
+        st.chat_message("user").write(prompt)
+        with st.spinner("Pensando…"):
+            try:
+                text, requirements = analyst.reply(st.session_state.chat)
+            except llm.AIUnavailable:
+                st.session_state.chat.pop()
+                st.error(ASTROS_MESSAGE)
+                return
+        st.session_state.chat.append({"role": "assistant", "content": text})
+        if requirements:
+            st.session_state.pending_requirements = requirements
+        st.rerun()
 
 
-def make_app_page(path):
-    def run_app():
-        code = path.read_text()
-        exec(compile(code, str(path), "exec"), {"st": st, "__name__": "__app__"})
+def selected_user():
+    uid = st.session_state.get("selected_user")
+    return next((user for user in registered_users() if user["id"] == uid), None)
 
-    return run_app
+
+def registered_users():
+    try:
+        return auth.list_users()
+    except Exception:
+        logging.exception("Listing users failed")
+        return []
+
+
+def users_page():
+    st.title("Usuarios")
+    user = selected_user()
+    if user is None:
+        st.write("Elige un usuario en la barra de la izquierda.")
+        return
+
+    st.header(user["name"])
+    if user["created_at"]:
+        st.caption(f"Registrado el {user['created_at'][:10]}")
+
+    st.subheader("Su aplicación")
+    try:
+        requirements = storage.read_file(requirements_path(user["id"]))
+    except Exception:
+        logging.exception("Reading requirements failed")
+        st.error("No hemos podido leer sus datos. Inténtalo de nuevo en un rato.")
+        return
+    if requirements:
+        show_requirements(requirements)
+        st.caption("La aplicación todavía no se construye: aquí se ven sus requisitos.")
+    else:
+        st.write("Todavía no ha pedido ninguna aplicación.")
+
+    st.divider()
+    if not st.session_state.get("confirm_delete"):
+        if st.button("Borrar usuario"):
+            st.session_state.confirm_delete = True
+            st.rerun()
+        return
+
+    st.warning(f"Se borrará a **{user['name']}** y su aplicación. No se puede deshacer.")
+    yes, cancel = st.columns(2)
+    if yes.button("Sí, borrar", type="primary", width="stretch"):
+        try:
+            auth.delete_user(user["id"])
+        except Exception:
+            logging.exception("Deleting user failed")
+            st.error("No hemos podido borrar el usuario. Inténtalo de nuevo en un rato.")
+            return
+        del st.session_state.selected_user
+        del st.session_state.confirm_delete
+        st.toast(f"{user['name']} borrado.")
+        st.rerun()
+    if cancel.button("Cancelar", width="stretch"):
+        del st.session_state.confirm_delete
+        st.rerun()
+
+
+def users_sidebar():
+    st.subheader("Usuarios registrados")
+    users = registered_users()
+    if not users:
+        st.caption("Todavía no hay nadie.")
+    for registered in users:
+        is_selected = registered["id"] == st.session_state.get("selected_user")
+        if st.button(
+            registered["name"],
+            key=f"user_{registered['id']}",
+            type="primary" if is_selected else "secondary",
+            width="stretch",
+        ):
+            st.session_state.selected_user = registered["id"]
+            st.session_state.pop("confirm_delete", None)
+            st.switch_page(admin_users_page)
 
 
 user = st.session_state.get("user")
@@ -170,18 +244,23 @@ if user is None:
     login_page()
     st.stop()
 
+my_app_page = st.Page(analyst_page, title="Mi aplicación", url_path=ANALYST_URL_PATH)
+admin_users_page = st.Page(users_page, title="Usuarios", url_path=USERS_URL_PATH)
+pages = [st.Page(home_page, title="Inicio", default=True)]
+if user["role"] != auth.ROLE_GUEST:
+    pages.append(my_app_page)
+if user["role"] == auth.ROLE_ADMIN:
+    pages.append(admin_users_page)
+navigation = st.navigation(pages)
+
+# After st.navigation, so the user buttons can switch page.
 with st.sidebar:
     st.write(f"**{user['name']}** · {ROLE_LABELS[user['role']]}")
     if st.button("Salir"):
         st.session_state.clear()
         st.rerun()
+    if user["role"] == auth.ROLE_ADMIN:
+        st.divider()
+        users_sidebar()
 
-pages = [st.Page(home_page, title="Inicio", default=True)]
-if user["role"] == auth.ROLE_ADMIN:
-    pages.append(st.Page(spike_page, title="Prueba técnica", url_path="prueba"))
-for app_file in sorted(APPS_DIR.glob("*.py")):
-    pages.append(
-        st.Page(make_app_page(app_file), title=app_file.stem, url_path=app_file.stem)
-    )
-
-st.navigation(pages).run()
+navigation.run()
