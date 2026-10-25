@@ -95,7 +95,11 @@
 
 1. El usuario entra con su nombre y PIN, o como invitado.
 2. **Invitado:** ve el listado de apps públicas y puede abrirlas. No puede hacer nada más.
-3. **Usuario registrado:** en «Inicio» ve su aplicación (o un enlace «Crear mi aplicación» si aún no tiene). En el menú tiene también «Apps públicas».
+3. **Usuario registrado:** el menú de la izquierda depende de si ya tiene app:
+   - **Sin app:** «Inicio» (página de inicio) abre directamente el chat del Analista, con el título «Crea tu aplicación». Después, «Apps públicas».
+   - **Con app:** la primera entrada es **el nombre de la app** (página de inicio) y abre la app para usarla, con sus opciones (pública, compartir, borrar). Después, «Cambiar mi aplicación», que abre el chat con el título «Cambiar <nombre>», y «Apps públicas».
+   - El admin ve lo mismo para su propia app, más «Usuarios».
+   - Al terminar de construir la app, el usuario sigue en el chat con el mensaje «¡Tu aplicación <nombre> está lista!» y el menú ya muestra el nombre. Al borrarla, vuelve al chat y el menú vuelve a «Inicio».
 4. Para crear o modificar su app, entra en **modo Analista**: describe lo que quiere y el sistema le hace preguntas hasta tener los requerimientos.
 5. El sistema le muestra los requerimientos en lenguaje sencillo y le pregunta si quiere empezar.
 6. Al confirmar, el sistema construye la app y guarda una nueva versión.
@@ -108,15 +112,15 @@
   - Solo letras (se aceptan tildes y ñ), como mucho 20, con la primera en mayúscula. Si la IA devuelve otra cosa, se quitan los caracteres que no son letras; si no queda nada, se usa «Miapp».
   - Al cambiar la app desde el chat, **el nombre se mantiene**.
   - No tiene que ser único: dos apps pueden llamarse igual, porque su dirección usa el hash del dueño.
-  - El nombre es el título de la app en «Inicio», en «Apps públicas», en su página y en el mensaje «¡Tu aplicación <nombre> está lista!».
+  - El nombre es la entrada del menú y el título de la página de la app del dueño, y aparece en «Apps públicas», en su página y en el mensaje «¡Tu aplicación <nombre> está lista!».
 - **Visibilidad:**
   - Una app nueva es **privada**. Cambiar la app desde el chat no cambia su visibilidad.
-  - En «Inicio», el dueño tiene el interruptor «Pública» («Aparece en «Apps públicas» y la puede usar cualquiera, también sin cuenta»).
+  - En la página de su app, el dueño tiene el interruptor «Pública» («Aparece en «Apps públicas» y la puede usar cualquiera, también sin cuenta»).
   - **Apps públicas:** página del menú para todos. Para los invitados es la página de inicio. Muestra las apps públicas ordenadas por nombre, con su nombre, la frase «Para qué sirve» de sus requisitos y un enlace «Abrir». Si no hay: «Todavía no hay aplicaciones públicas.»
-  - **Página de cada app:** `/app?app=<hash del dueño>`. Cuando la app es pública, el dueño ve en «Inicio» el enlace «Enlace para compartir». Si la app no existe, o es privada y quien la abre no es su dueño ni el admin, se muestra «Esta aplicación no existe o no es pública.», el mismo mensaje en los dos casos, para no revelar qué apps existen.
+  - **Página de cada app:** `/app?app=<hash del dueño>`. Cuando la app es pública, el dueño ve en la página de su app el enlace «Enlace para compartir». Si la app no existe, o es privada y quien la abre no es su dueño ni el admin, se muestra «Esta aplicación no existe o no es pública.», el mismo mensaje en los dos casos, para no revelar qué apps existen.
   - El listado se guarda en memoria hasta 5 minutos y se refresca al momento cuando una app cambia, se publica, se oculta o se borra.
 - **Borrado:**
-  - En «Inicio», «Borrar mi aplicación» pide confirmación («Se borrará <nombre> y lo que pediste. Tu cuenta sigue. No se puede deshacer.» / «Sí, borrar» / «Cancelar»).
+  - En la página de su app, «Borrar mi aplicación» pide confirmación («Se borrará <nombre> y lo que pediste. Tu cuenta sigue. No se puede deshacer.» / «Sí, borrar» / «Cancelar»).
   - Al confirmar se borran el código, los datos de la app y los requisitos; la cuenta se mantiene y el usuario puede crear una app nueva, que recibirá un nombre nuevo.
 
 ### Mensajes divertidos mientras se espera a la IA
@@ -175,7 +179,7 @@
 
 ### Ejecución de las apps
 - Las apps de los usuarios se ejecutan **dentro de Yahoraque**.
-- **Dónde se ven:** el dueño, en «Inicio»; el admin, en «Usuarios» al elegir al usuario; todos (si es pública), en su página `/app?app=<hash del dueño>`. Siempre dentro de un marco, debajo del título con su nombre.
+- **Dónde se ven:** el dueño, en la entrada del menú con el nombre de la app; el admin, en «Usuarios» al elegir al usuario; todos (si es pública), en su página `/app?app=<hash del dueño>`. Siempre dentro de un marco, debajo del título con su nombre.
 - **Apps en JavaScript siempre que sea posible:**
   - El fichero de la app es Python (`app.py`), pero su único trabajo es mostrar una página completa de HTML, CSS y JavaScript con una sola llamada `st.components.v1.html(HTML, height=...)`. Toda la lógica y la interacción (botones, cálculos, juegos, gráficos) van en JavaScript, así que responde al momento, sin recargar la página en el servidor.
   - Los widgets de Streamlit (`st.button`, `st.text_input`…) solo se usan si algo no se puede hacer en el navegador.
@@ -266,12 +270,13 @@ La app está bien si:
 - Una app recién construida tiene un nombre de una sola palabra, solo letras, de 20 como mucho, y lo conserva al cambiarla desde el chat.
 - Una app nueva es privada: un invitado no la ve en «Apps públicas» ni puede abrirla con su enlace.
 - Al activar «Pública», la app aparece en «Apps públicas» y un invitado puede abrirla y usarla; al desactivarlo, deja de aparecer y su enlace muestra «Esta aplicación no existe o no es pública.».
-- Tras borrar su app, el usuario ve «Crear mi aplicación» en «Inicio» y la app desaparece de «Apps públicas».
+- Tras borrar su app, el usuario vuelve al chat «Crea tu aplicación», el menú muestra «Inicio» en lugar del nombre y la app desaparece de «Apps públicas».
+- Un usuario sin app ve en el menú «Inicio» y «Apps públicas», y «Inicio» abre el chat. Con app, ve el nombre de la app (que la abre), «Cambiar mi aplicación» (que abre el chat) y «Apps públicas»; al recargar se mantiene.
 - El admin ve en la barra de la izquierda a todos los usuarios registrados; los demás no ven esa lista.
 - El admin puede abrir cualquier usuario y ver su aplicación (pública o privada), su nombre y sus requisitos.
 - Tras confirmar el borrado, el usuario desaparece de la lista, su carpeta ya no existe y no puede entrar con su nombre y PIN.
 - El código generado no consigue leer los secretos.
-- Al confirmar unos requisitos, se construye una app que aparece en «Inicio» del dueño y en «Usuarios» del admin.
+- Al confirmar unos requisitos, se construye una app que aparece en el menú del dueño con su nombre y en «Usuarios» del admin.
 - Si la nueva versión no arranca tras 2 arreglos, se sigue viendo la anterior y los requisitos nuevos no se guardan.
 - Una app con `import os`, `st.secrets`, `getattr`, `open` o atributos `__…__` se rechaza antes de ejecutarse. Los textos pueden contener `__` (habitual en JavaScript y CSS).
 - Una app nueva se construye como página HTML/JavaScript dentro de `st.components.v1.html`, sin widgets de Streamlit salvo que haga falta, y funciona en Chrome y Safari dentro del marco aislado.
