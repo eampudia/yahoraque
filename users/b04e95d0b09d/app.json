@@ -1,5 +1,5 @@
 {
   "name": "Fotina",
   "public": true,
-  "description": "Una aplicaci\u00f3n web para subir una imagen, editarla de forma b\u00e1sica y descargar el resultado."
+  "description": "Una aplicaci\u00f3n web sencilla para editar fotos con ajustes b\u00e1sicos, texto, marcos y filtros."
 }
