@@ -97,7 +97,7 @@
 2. **Invitado:** ve el listado de apps públicas y puede abrirlas. No puede hacer nada más.
 3. **Usuario registrado:** el menú de la izquierda depende de si ya tiene app:
    - **Sin app:** «Inicio» (página de inicio) abre directamente el chat del Analista, con el título «Crea tu aplicación». Después, «Apps públicas».
-   - **Con app:** la primera entrada es **el nombre de la app** (página de inicio) y abre la app para usarla, con sus opciones (pública, compartir, borrar). Después, «Cambiar mi aplicación», que abre el chat con el título «Cambiar <nombre>», y «Apps públicas».
+   - **Con app:** la primera entrada es **el nombre de la app** (página de inicio) y abre la app para usarla, con sus opciones (pública, compartir, borrar). Después, «Apps públicas». El chat para cambiarla **no está en el menú**: se abre con el enlace «Cambiar mi aplicación» de la página de la app, con el título «Cambiar <nombre>».
    - El admin ve lo mismo para su propia app, más «Usuarios».
    - Al terminar de construir la app, el usuario sigue en el chat con el mensaje «¡Tu aplicación <nombre> está lista!» y el menú ya muestra el nombre. Al borrarla, vuelve al chat y el menú vuelve a «Inicio».
 4. Para crear o modificar su app, entra en **modo Analista**: describe lo que quiere y el sistema le hace preguntas hasta tener los requerimientos.
@@ -271,7 +271,7 @@ La app está bien si:
 - Una app nueva es privada: un invitado no la ve en «Apps públicas» ni puede abrirla con su enlace.
 - Al activar «Pública», la app aparece en «Apps públicas» y un invitado puede abrirla y usarla; al desactivarlo, deja de aparecer y su enlace muestra «Esta aplicación no existe o no es pública.».
 - Tras borrar su app, el usuario vuelve al chat «Crea tu aplicación», el menú muestra «Inicio» en lugar del nombre y la app desaparece de «Apps públicas».
-- Un usuario sin app ve en el menú «Inicio» y «Apps públicas», y «Inicio» abre el chat. Con app, ve el nombre de la app (que la abre), «Cambiar mi aplicación» (que abre el chat) y «Apps públicas»; al recargar se mantiene.
+- Un usuario sin app ve en el menú «Inicio» y «Apps públicas», y «Inicio» abre el chat. Con app, ve solo el nombre de la app (que la abre) y «Apps públicas»; «Cambiar mi aplicación» aparece solo dentro de la página de la app y abre el chat. Al recargar se mantiene.
 - El admin ve en la barra de la izquierda a todos los usuarios registrados; los demás no ven esa lista.
 - El admin puede abrir cualquier usuario y ver su aplicación (pública o privada), su nombre y sus requisitos.
 - Tras confirmar el borrado, el usuario desaparece de la lista, su carpeta ya no existe y no puede entrar con su nombre y PIN.
