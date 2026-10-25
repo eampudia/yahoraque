@@ -23,9 +23,24 @@
 
 ## 4. La pieza de IA
 
-- **Opción elegida:** Google Gemini, capa gratuita.
+- **Opción elegida:** modelos Gemini de Google, capa gratuita, usados con la API de Google (Gemini API) y su librería oficial para Python.
 - **Por qué:** Permite desarrollar la aplicación de forma gratuita y es la opción gratuita que mejor se comporta.
 - **El usuario no sabe qué modelo se usa.** La interfaz nunca menciona Gemini, para poder cambiar de proveedor sin afectar al usuario.
+
+### Elección del modelo
+1. **Listar:** el sistema pide a la API de Google la lista de modelos disponibles para la clave y se queda solo con los que pueden generar texto. La lista se guarda en memoria y se refresca cada cierto tiempo (por ejemplo, cada hora), no en cada mensaje.
+2. **Ordenar de más a menos potente:** la API no indica qué modelo es más potente, así que el orden se calcula a partir del nombre:
+   - Primero la versión más alta (por ejemplo, 2.5 antes que 2.0).
+   - Dentro de la misma versión: `pro` antes que `flash`, y `flash` antes que `flash-lite`.
+   - Se descartan los modelos que no sirven para conversar o generar código (embeddings, imagen, audio, etc.).
+3. **Probar en orden:** cada petición se envía al primer modelo de la lista. Si falla (cuota agotada, modelo no disponible, error temporal), se reintenta **la misma petición** con el siguiente, sin mostrar nada al usuario.
+4. **Recordar los que fallan:** un modelo que falla se aparta durante un tiempo, para no perder tiempo probándolo en cada mensaje:
+   - Sin cuota diaria, o no disponible para la clave: 24 horas.
+   - Límite por minuto: 1 minuto.
+   - Saturado, error del servidor o sin respuesta en 60 segundos: 5 minutos.
+   - Error en la petición (probablemente un fallo nuestro): no se aparta.
+5. **Si fallan todos:** se muestra "Los astros no están alineados, inténtalo más tarde."
+6. **Registro interno:** qué modelo respondió y cuáles fallaron se anota en los logs, nunca en la pantalla del usuario.
 - **Instrucciones para el modelo (system prompt):**
   - **Modo Analista:** se comporta como un analista tratando con un cliente. Hace las preguntas necesarias y, cuando ve que puede diseñar algo, muestra los requerimientos en lenguaje no técnico y pregunta si se empieza a construir.
   - **Modo Desarrollador:** se comporta como un programador senior.
@@ -95,10 +110,9 @@
 - Si sigue fallando, se mantiene la última versión que funcionaba y se avisa al usuario.
 
 ### Uso de la IA
-- Un módulo consulta los modelos disponibles de la capa gratuita y usa el mejor disponible. Cuando se agota su cuota, pasa al siguiente.
-- Una misma generación de código usa siempre el mismo modelo, para evitar código inconsistente.
+- La elección del modelo y el cambio automático cuando falla se describen en la sección 4 («Elección del modelo»).
+- Una app se genera en una sola petición, para que todo su código salga del mismo modelo. Si esa petición falla, se repite entera con el siguiente modelo.
 - No hay límite de mensajes por usuario.
-- Si se agotan todos los modelos, se muestra: **"Los astros no están alineados, inténtalo más tarde."**
 
 ## 8. Restricciones
 
@@ -131,6 +145,7 @@ La app está bien si:
 - Un usuario puede volver a una versión anterior de su app.
 - Un usuario puede borrar su app y su cuenta.
 - El código generado no consigue leer los secretos.
+- Si el modelo más potente falla, el usuario recibe la respuesta de otro modelo sin ver ningún error.
 - Cuando se agota la IA, aparece el mensaje "Los astros no están alineados, inténtalo más tarde."
 
 ## 10. Fuera de alcance (por ahora)

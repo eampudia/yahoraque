@@ -27,4 +27,4 @@
 - Never commit or push without asking me first. Show me what will be committed and wait for my OK.
 ### Plus
 - If you do something right and I praise you, please add it to this file, (before asking me)
-- 
+- When updating `especificacion.md`: turn ideas into concrete, testable rules, keep the sections consistent (no duplicates, add acceptance criteria), and point out ambiguous wording instead of guessing silently. 
