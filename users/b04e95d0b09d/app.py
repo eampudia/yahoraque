@@ -1,13 +1,11 @@
 import random
 
-# Inicializar estado
 if "flores" not in st.session_state:
     st.session_state.flores = []
 
 if "fondo_actual" not in st.session_state:
     st.session_state.fondo_actual = "Atardecer Suave"
 
-# Banco de frases inspiradoras
 frases = [
     "Cada pequeño paso cuenta en tu camino hacia el éxito.",
     "Eres más fuerte de lo que imaginas y capaz de lograr lo que te propones.",
@@ -21,7 +19,6 @@ frases = [
     "Cada flor nace a su propio ritmo; date el tiempo de crecer."
 ]
 
-# Estilos de fondo
 fondos = {
     "Atardecer Suave": "linear-gradient(135deg, #fbc531, #e84118)",
     "Pradera Fresca": "linear-gradient(135deg, #4cd137, #009432)",
@@ -31,11 +28,9 @@ fondos = {
 
 colores_flor = ["#ff4757", "#2ed573", "#1e90ff", "#ffa502", "#9b59b6", "#ff6b81", "#fffa65"]
 
-# Título y bienvenida
 st.title("🌷 El Jardín de las Ideas Positivas")
 st.write("Bienvenido a tu rincón de paz. Planta flores digitales y cultiva una mente llena de inspiración.")
 
-# Controles principales
 col1, col2 = st.columns([2, 1])
 
 with col1:
@@ -58,7 +53,6 @@ with col2:
 
 st.divider()
 
-# Aplicar estilo visual del jardín con HTML/CSS
 gradiente = fondos[st.session_state.fondo_actual]
 
 estilo_jardin = f"""
@@ -93,7 +87,6 @@ else:
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
             text-align: center;
             width: 180px;
-            animation: fadeIn 0.5s ease-in-out;
         ">
             <div style="font-size: {flor['tamanio']}px; color: {flor['color']}; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 ❀
@@ -108,7 +101,6 @@ estilo_jardin += "</div>"
 
 st.components.v1.html(estilo_jardin, height=450)
 
-# Botón para limpiar el jardín si hay flores
 if st.session_state.flores:
     st.write("")
     if st.button("🍂 Limpiar el Jardín", key="btn_limpiar"):
