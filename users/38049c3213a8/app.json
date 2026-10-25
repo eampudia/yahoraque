@@ -1,5 +1,5 @@
 {
   "name": "Pastelcalc",
-  "public": false,
+  "public": true,
   "description": "Una calculadora b\u00e1sica y bonita con dise\u00f1o japon\u00e9s en tonos pastel para hacer cuentas de forma alegre."
 }
