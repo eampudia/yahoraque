@@ -30,7 +30,7 @@ colores_flor = ["#ff4757", "#2ed573", "#1e90ff", "#ffa502", "#9b59b6", "#ff6b81"
 simbolos_flor = ["❀", "🌸", "🌻", "🌷", "🌼"]
 
 st.title("🌷 Floralia: El Jardín de las Ideas Positivas")
-st.write("Bienvenido a tu rincón de paz. Planta flores digitales y cultiva una mente llena de inspiración con textos claros y limpios.")
+st.markdown("Bienvenido a tu rincón de paz. Planta flores digitales y cultiva una mente llena de inspiración con textos claros y limpios.")
 
 col1, col2 = st.columns([2, 1])
 
