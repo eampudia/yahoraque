@@ -1,8 +1,8 @@
-st.title("💖 Calculadora Manga Cuqui 🌸")
+st.title("🐮 Calculadora Manga Cuqui 🌸")
 st.markdown(
     """
     <div style="text-align: center; background-color: #ffe6f0; padding: 15px; border-radius: 15px; border: 2px dashed #ff99cc;">
-        <span style="font-size: 24px;">✨ ¡Hola, senpai! ¡Vamos a hacer math-magia juntos hoy! ✨</span>
+        <span style="font-size: 24px;">✨ ¡Muuuys buenos días! ¡A calcular con nuestra vaquita kawaii! ✨</span>
     </div>
     """,
     unsafe_allow_html=True
@@ -10,7 +10,6 @@ st.markdown(
 
 st.write("")
 
-# Inicializar el estado de la calculadora
 if "calc_display" not in st.session_state:
     st.session_state.calc_display = "0"
 if "calc_op" not in st.session_state:
@@ -23,19 +22,18 @@ if "calc_new_num" not in st.session_state:
 col_personaje, col_calc = st.columns([1, 2], gap="medium")
 
 with col_personaje:
-    st.markdown("### 🐾 Mascotita")
-    st.image("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80", width=180)
+    st.markdown("### 🐮 Vaquita Kawaii")
+    st.image("https://images.unsplash.com/photo-1527153857715-3908f2ae5e61?w=300&auto=format&fit=crop&q=80", width=180)
     st.markdown(
         """
-        <div style="background-color: #e6f7ff; padding: 10px; border-radius: 10px; text-align: center; border: 1px solid #99d6ff;">
-            <p style="color: #0066cc; margin: 0; font-size: 14px;"><b>¡Mimi la conejita te anima!</b><br>¡Tú puedes con todas las cuentas, nya~!</p>
+        <div style="background-color: #fff0f5; padding: 10px; border-radius: 10px; text-align: center; border: 1px solid #ffb6c1;">
+            <p style="color: #d1477a; margin: 0; font-size: 14px;"><b>¡Lola la vaquita te acompaña!</b><br>¡Muuuuchos éxitos con tus números, nya~!</p>
         </div>
         """,
         unsafe_allow_html=True
     )
 
 with col_calc:
-    # Pantalla de la calculadora estilo manga
     st.markdown(
         f"""
         <div style="background-color: #2b1d3a; color: #ffb3d9; padding: 20px; border-radius: 15px; text-align: right; font-family: monospace; font-size: 32px; border: 4px solid #ff99cc; box-shadow: 0px 4px 10px rgba(255, 153, 204, 0.4);">
@@ -90,12 +88,11 @@ with col_calc:
                     resultado = previo * actual
                 elif st.session_state.calc_op == "/":
                     if actual == 0:
-                        st.error("¡No se puede dividir entre cero, baka! 🌸")
+                        st.error("¡Muuu error! No se puede dividir entre cero 🌸")
                         return
                     else:
                         resultado = previo / actual
                 
-                # Formatear para quitar decimales innecesarios si es entero
                 if resultado.is_integer():
                     st.session_state.calc_display = str(int(resultado))
                 else:
@@ -119,7 +116,6 @@ with col_calc:
         except ValueError:
             st.error("¡Valor inválido para porcentaje!")
 
-    # Botones distribuidos en filas usando columnas
     r1c1, r1c2, r1c3, r1c4 = st.columns(4)
     with r1c1:
         if st.button("AC", key="btn_ac", use_container_width=True):
@@ -186,7 +182,7 @@ with col_calc:
     with r5c3:
         if st.button("💖", key="btn_heart", use_container_width=True):
             st.balloons()
-            st.toast("¡Te manda mucho amor y buena suerte en tus cuentas! 💕")
+            st.toast("¡Lola te manda un muuuuy fuerte abrazo! 💕")
 
 st.markdown("---")
-st.caption("Calculadora Manga Cuqui • Hecho con cariño y estética pastel 🌸")
+st.caption("Calculadora Manga Cuqui • Con vaquita kawaii y estética pastel 🌸")
