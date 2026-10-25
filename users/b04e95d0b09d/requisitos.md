@@ -6,5 +6,5 @@ Qué podrá hacer el usuario:
 - Aplicar filtros de color.
 - Escribir texto y añadir marcos encima de la foto.
 - Descargar la imagen editada.
-Cómo se verá: Una pantalla clara con la foto en el centro y las herramientas de edición ordenadas a un lado.
+Cómo se verá: Una pantalla clara con la foto en el centro y una barra lateral con iconos pequeños en colores pastel para acceder a las herramientas.
 Qué no hará: No recordará los cambios al cerrar la página ni guardará las fotos en ninguna cuenta o base de datos.
