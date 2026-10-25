@@ -452,6 +452,9 @@ else:
     pages = [my_app_page, public_list_page, view_page]
 if user["role"] == auth.ROLE_ADMIN:
     pages.append(admin_users_page)
+# Reached from links, not from the menu: an app's page, and the chat to change
+# your app (its link is on the app's page).
+off_menu = [view_page, my_app_page] if my_app else [view_page]
 # Our own menu, so the logo can go above it at a readable size
 # (st.logo is at most 32px high).
 navigation = st.navigation(pages, position="hidden")
@@ -460,7 +463,7 @@ navigation = st.navigation(pages, position="hidden")
 with st.sidebar:
     st.image(LOGO, width=SIDEBAR_LOGO_WIDTH)
     for page in pages:
-        if page is not view_page:
+        if not any(page is hidden for hidden in off_menu):
             st.page_link(page)
     st.divider()
     st.write(f"**{user['name']}** · {ROLE_LABELS[user['role']]}")
