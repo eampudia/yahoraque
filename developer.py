@@ -10,14 +10,21 @@ import logging
 import re
 
 import app_check
+import app_theme
 import guardrails
 import llm
 
 FIX_ATTEMPTS = 2
 CODE_PATTERN = re.compile(r"```(?:python)?\s*\n(.*?)```", re.DOTALL)
+# `st` is already given: weaker models often import it anyway.
+STREAMLIT_IMPORT = re.compile(
+    r"^[ \t]*(?:import streamlit\S*(?:[ \t]+as[ \t]+\w+)?|from streamlit\S*[ \t]+import[^\n]*)[ \t]*\n",
+    re.MULTILINE,
+)
 NAME_PATTERN = re.compile(r"^\s*NOMBRE:\s*(\S+)", re.MULTILINE)
 NAME_MAX_LENGTH = 20
 DEFAULT_NAME = "Miapp"
+LIBRARY_LIST = "\n".join(f"  - {use}: {url}" for use, url in app_theme.LIBRARIES.items())
 
 SYSTEM_PROMPT = f"""Eres un programador senior de JavaScript, HTML, CSS y Python en Yahoraque, \
 una plataforma que construye aplicaciones web sencillas para personas sin conocimientos técnicos. \
@@ -41,9 +48,17 @@ Reglas de la página HTML/JavaScript:
 - Se muestra en un marco aislado: no puede comunicarse con el resto de la página de Yahoraque.
 - No uses `localStorage`, `sessionStorage`, `indexedDB` ni cookies: dentro del marco dan error. \
 Los datos viven en variables de JavaScript mientras la página está abierta.
-- Puedes cargar librerías desde cdnjs.cloudflare.com o cdn.jsdelivr.net (con versión fija) si \
-hacen falta, pero no llames a otras webs ni APIs.
-- Diseño moderno, adaptable al ancho del marco y que se lea bien en móvil.
+- Yahoraque ya carga en la página Pico CSS 2 y su propio estilo (colores del logo, letras \
+redondeadas): no los cargues tú. Usa HTML semántico (`main.container`, `article` como tarjeta, \
+`button`, `form`, `label` + `input`, `fieldset`, `table`, `progress`, `details`…), que Pico ya \
+pinta bonito, y escribe solo el CSS que falte.
+- Colores de Yahoraque como variables CSS: `--yq-blue`, `--yq-green`, `--yq-yellow`, \
+`--yq-purple`, `--yq-navy`. Úsalos para gráficas, etiquetas y detalles. No los redefinas ni \
+cambies el color principal de Pico (el morado de Yahoraque): así todas las apps se ven de la casa.
+- Solo puedes cargar estas librerías, con esta dirección exacta, y solo si hacen falta:
+{LIBRARY_LIST}
+- No cargues otras librerías ni llames a otras webs o APIs.
+- Diseño adaptable al ancho del marco y que se lea bien en móvil.
 
 Cómo responder:
 - Primera línea: `NOMBRE: <palabra>`, con un nombre para la aplicación: una sola palabra \
@@ -90,7 +105,8 @@ class BuildRejected(Exception):
 
 def extract_code(answer):
     match = CODE_PATTERN.search(answer)
-    return (match.group(1) if match else answer).strip() + "\n"
+    code = (match.group(1) if match else answer).strip() + "\n"
+    return STREAMLIT_IMPORT.sub("", code)
 
 
 def extract_name(answer):
@@ -100,9 +116,20 @@ def extract_name(answer):
     return letters[:NAME_MAX_LENGTH].capitalize() or DEFAULT_NAME
 
 
+def unknown_libraries_problem(code):
+    unknown = app_theme.unknown_libraries(code)
+    if unknown:
+        return "Librerías no permitidas (usa solo las de la lista): " + ", ".join(unknown)
+    return None
+
+
 def find_problem(code):
     """The guardrails' objection or the start error, or None if the app works."""
-    return guardrails.check(code) or app_check.test_run(code)
+    return (
+        guardrails.check(code)
+        or unknown_libraries_problem(code)
+        or app_check.test_run(code)
+    )
 
 
 def build(requirements, previous_code=None, name=None):

@@ -23,6 +23,8 @@ from types import ModuleType, SimpleNamespace
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
+import app_theme
+
 ALLOWED_MODULES = {
     "calendar",
     "collections",
@@ -110,6 +112,11 @@ def check(code):
             modules = []
         for module in modules:
             if module.split(".")[0] not in ALLOWED_MODULES:
+                if module.split(".")[0] == "streamlit":
+                    return (
+                        f"Línea {line}: no importes «{module}»: `st` ya está disponible "
+                        "(usa st.components.v1.html para la página). Quita esa línea."
+                    )
                 return f"Línea {line}: no se puede importar «{module}»."
 
         if isinstance(node, ast.Name) and (
@@ -227,6 +234,7 @@ def _html_component(html, width=None, height=None, scrolling=False):
     so an app could act as its viewer (for example, the admin). A data: URL
     gets its own origin in the browser.
     """
+    html = app_theme.with_theme(html)
     src = "data:text/html;base64," + base64.b64encode(html.encode()).decode()
     return st.iframe(src, width=width or "stretch", height=height or HTML_DEFAULT_HEIGHT)
 
@@ -286,5 +294,7 @@ def run(code, app_id):
         "__builtins__": {**SAFE_BUILTINS, "__import__": _safe_import},
         "__name__": "__app__",
         "st": app_st,
+        # Usual alias from "import streamlit.components.v1 as components".
+        "components": app_st.components.v1,
     }
     exec(compile(code, "<app>", "exec"), app_globals)
