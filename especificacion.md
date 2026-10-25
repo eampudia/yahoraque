@@ -43,7 +43,7 @@
 6. **Registro interno:** qué modelo respondió y cuáles fallaron se anota en los logs, nunca en la pantalla del usuario.
 - **Instrucciones para el modelo (system prompt):**
   - **Modo Analista:** se comporta como un analista tratando con un cliente. Hace las preguntas necesarias y, cuando ve que puede diseñar algo, muestra los requerimientos en lenguaje no técnico y pregunta si se empieza a construir.
-  - **Modo Desarrollador:** se comporta como un programador senior.
+  - **Modo Desarrollador:** se comporta como un programador senior. Recibe los requisitos confirmados (y el código actual de la app, si ya tenía una) y devuelve el código completo de la app en un único bloque, cumpliendo las reglas de los guardarraíles (sección 7), que se le explican en sus instrucciones. Si la app es de las prohibidas, responde «RECHAZADA» y no se construye nada.
   - En ambos modos rechaza peticiones de phishing, suplantación o acciones moralmente no deseables (ver sección 7).
 
 ## 5. Usuarios y permisos
@@ -146,13 +146,28 @@
 ## 7. Funcionamiento técnico
 
 ### Ejecución de las apps
-- Las apps de los usuarios se ejecutan **dentro de Yahoraque**, cada una en su propia ruta.
-- El nombre y la ruta de cada app es el **hash del nombre** del usuario. El usuario no los elige.
-- Las apps se generan en Python. Pueden incluir HTML y JavaScript para una interfaz más bonita y práctica.
+- Las apps de los usuarios se ejecutan **dentro de Yahoraque**.
+- **Dónde se ven ahora:** el dueño la ve en «Inicio», dentro de un marco, con el enlace «Crear o cambiar mi aplicación» encima. El admin la ve en la página «Usuarios» al elegir al usuario.
+- **Pendiente:** cada app tendrá su propia ruta, cuyo nombre es el **hash del nombre** del usuario (el usuario no lo elige). Llegará con el listado de apps públicas.
+- Las apps se generan en Python con Streamlit. Pueden incluir HTML y JavaScript propios, que se muestran aislados (ver «Guardarraíles»).
 - **Las apps no recuerdan nada:** no guardan datos entre sesiones. Se avisa al usuario de esto durante el modo Analista.
 
 ### Guardarraíles
-- **Seguridad:** el código generado no puede leer los secretos (clave de la IA, token de GitHub) ni el código de Yahoraque o de otras apps. Se implementa con guardarraíles en el código que revisan y restringen lo que puede hacer la app generada.
+- **Seguridad:** el código generado no puede leer los secretos (clave de la IA, token de GitHub), ni el código de Yahoraque o de otras apps, ni cambiar quién es el usuario conectado. Se implementa en dos capas:
+  1. **Revisión antes de ejecutar:** se rechaza el código que:
+     - importa módulos fuera de esta lista: `calendar`, `collections`, `datetime`, `decimal`, `fractions`, `functools`, `itertools`, `json`, `math`, `random`, `re`, `statistics`, `textwrap` (tampoco `streamlit`, que ya viene dado como `st`);
+     - usa `eval`, `exec`, `compile`, `open`, `getattr`, `setattr`, `delattr`, `globals`, `locals`, `vars`, `dir`, `type`, `object`, `super`, `input`, `help`, `breakpoint` o `memoryview`;
+     - usa nombres o atributos que empiecen por guion bajo, `.format`/`.format_map`, o atributos de frames y código (`gi_`, `f_`, `co_`, `tb_`, `cr_`, `ag_`);
+     - contiene textos con `__`;
+     - usa funciones de `st` fuera de la lista permitida (por ejemplo `st.secrets`, `st.sidebar`, `st.set_page_config`, `st.navigation`).
+  2. **Ejecución limitada:**
+     - Solo hay funciones básicas de Python (`len`, `range`, `sorted`…).
+     - Los módulos permitidos llegan sin sus partes privadas ni otros módulos dentro.
+     - `st` solo tiene las funciones permitidas, también en columnas, pestañas, formularios y demás contenedores.
+     - Las claves de los widgets y `st.session_state` llevan el prefijo `app_<hash>_`, así que una app no puede leer ni cambiar el estado de Yahoraque (por ejemplo, el usuario conectado) ni el de otras apps.
+     - `st.image`, `st.audio` y `st.video` solo aceptan direcciones web o datos, nunca rutas de ficheros del servidor.
+     - El HTML/JavaScript propio (`st.components.v1.html`) se muestra en un marco con origen propio (URL `data:`): su JavaScript no puede leer ni manejar la página de Yahoraque de quien la está viendo.
+- Si una app que ya estaba guardada falla al ejecutarse, se muestra «La aplicación ha tenido un problema. Prueba a recargar la página.» y el error real va a los logs.
 - **Contenido:** no se generan apps de phishing, de suplantación de marcas o personas, ni con fines moralmente no deseables.
 
 ### Almacenamiento y versiones
@@ -168,9 +183,13 @@
 - Al borrar una cuenta o app se elimina su carpeta, pero **no se reescribe el historial de git**: las versiones antiguas siguen existiendo.
 - **Reset total de la plataforma:** se borra la rama `datos`. Desaparecen todos los usuarios y sus apps; el código de Yahoraque no cambia.
 ### Apps rotas
-- Antes de dejar visible una nueva versión, se comprueba que arranca sin errores.
-- Si falla, la IA intenta arreglarla **hasta 2 veces**.
-- Si sigue fallando, se mantiene la última versión que funcionaba y se avisa al usuario.
+- Antes de dejar visible una nueva versión, se comprueba que pasa la revisión de los guardarraíles y que arranca sin errores.
+- **La prueba de arranque** se hace en un proceso aparte, sin ningún secreto en su entorno, fuera de la carpeta del proyecto y con un límite de 30 segundos. Así una app rota o con un bucle infinito no bloquea Yahoraque. Solo se comprueba la primera carga de la app, no lo que pasa al pulsar sus botones.
+- Si falla, la IA recibe el error y reescribe la app completa, **hasta 2 veces**.
+- La app y sus requisitos solo se guardan si la nueva versión funciona. Si sigue fallando, se mantiene la última versión que funcionaba, los requisitos siguen pendientes en el chat y se muestra: «No hemos conseguido que la aplicación funcione. Si tenías una, sigue la anterior. Pulsa «¡Sí, adelante!» para intentarlo otra vez o cambia algo.»
+- Si la IA rechaza la app por su contenido: «No podemos construir esta aplicación porque no cumple las normas de Yahoraque.»
+- Si se agotan todos los modelos: «Los astros no están alineados, inténtalo más tarde.»
+- Si todo va bien: «¡Tu aplicación está lista!» con un enlace «Ver mi aplicación».
 
 ### Uso de la IA
 - La elección del modelo y el cambio automático cuando falla se describen en la sección 4 («Elección del modelo»).
@@ -212,6 +231,12 @@ La app está bien si:
 - El admin puede abrir cualquier usuario y ver su aplicación (o sus requisitos, mientras no se construyan apps).
 - Tras confirmar el borrado, el usuario desaparece de la lista, su carpeta ya no existe y no puede entrar con su nombre y PIN.
 - El código generado no consigue leer los secretos.
+- Al confirmar unos requisitos, se construye una app que aparece en «Inicio» del dueño y en «Usuarios» del admin.
+- Si la nueva versión no arranca tras 2 arreglos, se sigue viendo la anterior y los requisitos nuevos no se guardan.
+- Una app con `import os`, `st.secrets`, `getattr`, `open` o atributos `__…__` se rechaza antes de ejecutarse.
+- Una app con un widget `key="user"` no cambia el usuario conectado.
+- `st.video`, `st.audio` o `st.image` con una ruta de fichero del servidor dan error.
+- Una app con un bucle infinito no se guarda y Yahoraque sigue respondiendo.
 - Registrarse, guardar requisitos o borrar un usuario no cambia la rama `master` ni reinicia Yahoraque.
 - Con la rama `datos` sin crear, el primer guardado funciona y la crea.
 - Si el modelo más potente falla, el usuario recibe la respuesta de otro modelo sin ver ningún error.
@@ -228,6 +253,8 @@ La app está bien si:
 ## 11. Riesgos asumidos
 
 - **Guardarraíles en el mismo proceso:** Python no permite aislar código de forma totalmente fiable dentro del mismo proceso. Un usuario malicioso podría llegar a saltarse los guardarraíles y leer los secretos. El más peligroso es el token de GitHub, porque con permiso de escritura podría modificar el código de Yahoraque.
+- **Bucles infinitos al usar la app:** la prueba de arranque solo cubre la primera carga. Si una app entra en un bucle infinito al pulsar un botón, bloquea la sesión de quien la usa y gasta CPU del servidor hasta que se reinicia.
+- **Construcción lenta:** construir una app puede tardar más de un minuto, sobre todo si varios modelos están saturados y hay que probar el siguiente.
 - **Sin límite de mensajes:** un único usuario muy activo puede agotar la cuota gratuita del día para todos.
 - **Historial de git:** al borrar una cuenta, sus versiones antiguas siguen en el historial del repositorio.
 - **Privacidad en la capa gratuita:** el proveedor de IA puede usar los datos enviados para entrenar sus modelos.

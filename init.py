@@ -8,7 +8,9 @@ import logging
 import streamlit as st
 
 import analyst
+import apps
 import auth
+import developer
 import llm
 import storage
 import waiting
@@ -16,6 +18,13 @@ import waiting
 ANALYST_URL_PATH = "mi-app"
 USERS_URL_PATH = "usuarios"
 ASTROS_MESSAGE = "Los astros no están alineados, inténtalo más tarde."
+BUILD_MESSAGES = {
+    "ai": ASTROS_MESSAGE,
+    "failed": "No hemos conseguido que la aplicación funcione. Si tenías una, sigue la "
+    "anterior. Pulsa «¡Sí, adelante!» para intentarlo otra vez o cambia algo.",
+    "rejected": "No podemos construir esta aplicación porque no cumple las normas de Yahoraque.",
+    "error": "No hemos podido guardar tu aplicación. Inténtalo de nuevo en un rato.",
+}
 ROLE_LABELS = {
     auth.ROLE_GUEST: "invitado",
     auth.ROLE_USER: "usuario",
@@ -72,12 +81,29 @@ def login_page():
 
 def home_page():
     user = st.session_state.user
-    st.title("Yahoraque")
     if user["role"] == auth.ROLE_GUEST:
+        st.title("Yahoraque")
         st.write("Aquí verás el listado de aplicaciones públicas.")
-    else:
-        st.write(f"Hola, {user['name']}. Aquí verás tu aplicación.")
-        st.page_link(my_app_page, label="Crear o cambiar mi aplicación", icon="💬")
+        return
+
+    st.page_link(my_app_page, label="Crear o cambiar mi aplicación", icon="💬")
+    if not show_app(user["id"]):
+        st.title("Yahoraque")
+        st.write(f"Hola, {user['name']}. Todavía no tienes aplicación: cuéntanos qué quieres.")
+
+
+def show_app(uid):
+    """Show the user's app in a frame. Returns False if there is none."""
+    try:
+        if apps.load(uid) is None:
+            return False
+    except Exception:
+        logging.exception("Loading app failed")
+        st.error("No hemos podido cargar la aplicación. Inténtalo de nuevo en un rato.")
+        return True
+    with st.container(border=True):
+        apps.show(uid)
+    return True
 
 
 def requirements_path(uid):
@@ -94,6 +120,28 @@ def saved_requirements(uid):
 def show_requirements(requirements):
     with st.container(border=True):
         st.markdown(requirements.replace("\n", "  \n"))
+
+
+def build_app(uid, requirements):
+    """Build and save the app; returns "ok" or a key of BUILD_MESSAGES.
+
+    Nothing is saved unless the new app works, so the previous one stays.
+    """
+    try:
+        code = waiting.run(developer.build, requirements, apps.load(uid))
+        apps.save(uid, code)
+        storage.write_file(requirements_path(uid), requirements, f"Requisitos {uid}")
+    except llm.AIUnavailable:
+        return "ai"
+    except developer.BuildRejected:
+        return "rejected"
+    except developer.BuildFailed as error:
+        logging.warning("Build for %s failed: %s", uid, error)
+        return "failed"
+    except Exception:
+        logging.exception("Building app failed")
+        return "error"
+    return "ok"
 
 
 def analyst_page():
@@ -116,18 +164,11 @@ def analyst_page():
         st.write("¿Empezamos a construirla?")
         yes, change = st.columns(2)
         if yes.button("¡Sí, adelante!", type="primary", width="stretch"):
-            try:
-                storage.write_file(
-                    requirements_path(user["id"]), pending, f"Requisitos {user['id']}"
-                )
-            except Exception:
-                logging.exception("Saving requirements failed")
-                st.error("No hemos podido guardar tus requisitos. Inténtalo de nuevo en un rato.")
-                return
-            st.session_state.saved_requirements = pending
-            st.session_state.chat = []
-            del st.session_state.pending_requirements
-            st.session_state.requirements_saved = True
+            st.session_state.build_result = build_app(user["id"], pending)
+            if st.session_state.build_result == "ok":
+                st.session_state.saved_requirements = pending
+                st.session_state.chat = []
+                del st.session_state.pending_requirements
             st.rerun()
         if change.button("Quiero cambiar algo", width="stretch"):
             del st.session_state.pending_requirements
@@ -136,11 +177,12 @@ def analyst_page():
             )
             st.rerun()
 
-    if st.session_state.pop("requirements_saved", False):
-        st.success(
-            "¡Guardado! Ya tengo todo lo necesario. "
-            "La construcción automática de la aplicación llegará muy pronto."
-        )
+    build_result = st.session_state.pop("build_result", None)
+    if build_result == "ok":
+        st.success("¡Tu aplicación está lista!")
+        st.page_link(home, label="Ver mi aplicación", icon="🚀")
+    elif build_result:
+        st.error(BUILD_MESSAGES[build_result])
 
     if st.session_state.pop("ai_failed", False):
         st.error(ASTROS_MESSAGE)
@@ -188,17 +230,17 @@ def users_page():
         st.caption(f"Registrado el {user['created_at'][:10]}")
 
     st.subheader("Su aplicación")
+    if not show_app(user["id"]):
+        st.write("Todavía no tiene aplicación.")
     try:
         requirements = storage.read_file(requirements_path(user["id"]))
     except Exception:
         logging.exception("Reading requirements failed")
-        st.error("No hemos podido leer sus datos. Inténtalo de nuevo en un rato.")
-        return
+        st.error("No hemos podido leer sus requisitos. Inténtalo de nuevo en un rato.")
+        requirements = None
     if requirements:
-        show_requirements(requirements)
-        st.caption("La aplicación todavía no se construye: aquí se ven sus requisitos.")
-    else:
-        st.write("Todavía no ha pedido ninguna aplicación.")
+        with st.expander("Sus requisitos"):
+            show_requirements(requirements)
 
     st.divider()
     if not st.session_state.get("confirm_delete"):
@@ -212,6 +254,7 @@ def users_page():
     if yes.button("Sí, borrar", type="primary", width="stretch"):
         try:
             auth.delete_user(user["id"])
+            apps.load.clear()
         except Exception:
             logging.exception("Deleting user failed")
             st.error("No hemos podido borrar el usuario. Inténtalo de nuevo en un rato.")
@@ -250,7 +293,8 @@ if user is None:
 
 my_app_page = st.Page(analyst_page, title="Mi aplicación", url_path=ANALYST_URL_PATH)
 admin_users_page = st.Page(users_page, title="Usuarios", url_path=USERS_URL_PATH)
-pages = [st.Page(home_page, title="Inicio", default=True)]
+home = st.Page(home_page, title="Inicio", default=True)
+pages = [home]
 if user["role"] != auth.ROLE_GUEST:
     pages.append(my_app_page)
 if user["role"] == auth.ROLE_ADMIN:
