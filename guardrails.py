@@ -83,6 +83,8 @@ MEDIA_FUNCTIONS = {"audio", "image", "video"}
 MEDIA_ARGUMENTS = ("image", "data", "subtitles")
 WEB_PREFIXES = ("http://", "https://", "data:")
 HTML_DEFAULT_HEIGHT = 150
+# st.html with it runs JavaScript in Yahoraque's page: it could steal the session cookie.
+FORBIDDEN_KEYWORDS = {"unsafe_allow_javascript"}
 
 
 class GuardrailError(Exception):
@@ -124,6 +126,8 @@ def check(code):
             and node.attr not in ALLOWED_ST | ST_EXTRAS
         ):
             return f"Línea {line}: las aplicaciones no pueden usar «st.{node.attr}»."
+        if isinstance(node, ast.keyword) and node.arg in FORBIDDEN_KEYWORDS:
+            return f"Línea {line}: no se puede usar «{node.arg}»."
         if isinstance(node, ast.alias) and node.asname and node.asname.startswith("_"):
             return f"Línea {line}: no se puede usar «{node.asname}»."
         if isinstance(node, ast.Constant) and isinstance(node.value, str) and "__" in node.value:
@@ -250,6 +254,9 @@ class _Streamlit:
         function = getattr(self._target, name)
 
         def call(*args, **kwargs):
+            # Also at run time: **{"unsafe_" + "allow_javascript": True} passes check().
+            if FORBIDDEN_KEYWORDS & kwargs.keys():
+                raise GuardrailError("Las aplicaciones no pueden ejecutar JavaScript en la página.")
             if name in MEDIA_FUNCTIONS:
                 _check_media([*args[:1], *(kwargs.get(arg) for arg in MEDIA_ARGUMENTS)])
             if kwargs.get("key") is not None:
