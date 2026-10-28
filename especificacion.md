@@ -56,7 +56,7 @@
 | Ver el listado de apps públicas | Sí | Sí | Sí |
 | Usar una app pública | Sí | Sí | Sí |
 | Crear o modificar una app | No | Sí, solo la suya | Sí |
-| Hacer pública o privada una app | No | Sí, solo la suya | Solo la suya |
+| Hacer pública o privada una app | No | Sí, solo la suya | Sí, cualquiera |
 | Ver una app privada | No | Solo la suya | Sí |
 | Borrar una app | No | Sí, solo la suya | Solo junto con su usuario |
 | Borrar una cuenta | No | Pendiente (ver más abajo) | Sí, cualquiera |
@@ -86,7 +86,8 @@
 
 ### Gestión de usuarios (solo admin)
 - **Listado:** cuando entra el admin, la barra de la izquierda muestra, debajo del menú, todos los usuarios registrados ordenados por nombre (sin distinguir mayúsculas). El admin no aparece en la lista. Los invitados y los usuarios no ven esta lista.
-- **Detalle:** al pulsar un usuario se abre la página «Usuarios» con su nombre, la fecha de registro, el nombre de su aplicación y si es pública o privada, la aplicación funcionando y sus requisitos (desplegables). Si no tiene: «Todavía no tiene aplicación».
+- **Detalle:** al pulsar un usuario se abre la página «Usuarios» con su nombre, la fecha de registro, el nombre de su aplicación, el interruptor «Pública», la aplicación funcionando y sus requisitos (desplegables). Si no tiene: «Todavía no tiene aplicación».
+- **Publicar u ocultar:** con el interruptor «Pública» el admin puede hacer pública o privada la app de cualquier usuario, igual que su dueño desde la página de su app. El cambio se guarda al momento, aparece o desaparece de «Apps públicas», y el dueño lo ve en su interruptor. Si no se puede guardar, el interruptor vuelve a su posición anterior y se muestra «No hemos podido cambiarlo. Inténtalo de nuevo en un rato.»
 - **Borrado:** en esa página, «Borrar usuario» pide confirmación («Sí, borrar» / «Cancelar»). Al confirmar se elimina la carpeta del usuario entera (cuenta, requisitos y app) y desaparece de la lista. Con ese nombre se puede volver a registrar cualquiera.
 - Si falla la lectura o el borrado, se muestra un mensaje sencillo y el error real va a los logs.
 - La lista se guarda en memoria hasta 5 minutos para no hacer una llamada a GitHub por usuario en cada clic. Se refresca al momento cuando alguien se registra o se borra un usuario.
@@ -276,6 +277,8 @@ La app está bien si:
 - Un usuario sin app ve en el menú «Inicio» y «Apps públicas», y «Inicio» abre el chat. Con app, ve solo el nombre de la app (que la abre) y «Apps públicas»; «Cambiar mi aplicación» aparece solo dentro de la página de la app y abre el chat. Al recargar se mantiene.
 - El admin ve en la barra de la izquierda a todos los usuarios registrados; los demás no ven esa lista.
 - El admin puede abrir cualquier usuario y ver su aplicación (pública o privada), su nombre y sus requisitos.
+- El admin puede hacer pública la app de otro usuario (un invitado la ve en «Apps públicas») y volver a hacerla privada (deja de verse).
+- Si falla el guardado al cambiar «Pública», el interruptor vuelve a mostrar lo que hay guardado y aparece el aviso, sin recargas en bucle.
 - Tras confirmar el borrado, el usuario desaparece de la lista, su carpeta ya no existe y no puede entrar con su nombre y PIN.
 - El código generado no consigue leer los secretos.
 - Al confirmar unos requisitos, se construye una app que aparece en el menú del dueño con su nombre y en «Usuarios» del admin.

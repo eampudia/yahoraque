@@ -126,18 +126,7 @@ def home_page():
     st.title(meta["name"])
     change, share = st.columns(2)
     change.page_link(my_app_page, label="Cambiar mi aplicación", icon=":material/edit:")
-    public = st.toggle(
-        "Pública",
-        value=meta["public"],
-        help="Aparece en «Apps públicas» y la puede usar cualquiera, también sin cuenta.",
-    )
-    if public != meta["public"]:
-        try:
-            apps.set_public(user["id"], public)
-        except Exception:
-            logging.exception("Changing visibility failed")
-            st.error("No hemos podido cambiarlo. Inténtalo de nuevo en un rato.")
-        st.rerun()
+    public_toggle(user["id"], meta)
     if meta["public"]:
         share.page_link(
             view_page, label="Enlace para compartir", icon=":material/share:", query_params={"app": user["id"]}
@@ -145,6 +134,30 @@ def home_page():
 
     show_app(user["id"])
     delete_my_app(user["id"], meta["name"])
+
+
+def public_toggle(uid, meta):
+    """The "Pública" switch of an app, for its owner and for the admin."""
+    key = f"public_{uid}"
+
+    def save():
+        try:
+            apps.set_public(uid, st.session_state[key])
+        except Exception:
+            logging.exception("Changing visibility failed")
+            # Back to what is saved, so the switch does not lie.
+            st.session_state[key] = meta["public"]
+            st.session_state.public_failed = True
+
+    st.toggle(
+        "Pública",
+        value=meta["public"],
+        key=key,
+        on_change=save,
+        help="Aparece en «Apps públicas» y la puede usar cualquiera, también sin cuenta.",
+    )
+    if st.session_state.pop("public_failed", False):
+        st.error("No hemos podido cambiarlo. Inténtalo de nuevo en un rato.")
 
 
 def delete_my_app(uid, name):
@@ -343,10 +356,9 @@ def users_page():
         st.caption(f"Registrado el {user['created_at'][:10]}")
 
     meta = app_meta(user["id"])
+    st.subheader(f"Su aplicación: {meta['name']}" if meta else "Su aplicación")
     if meta:
-        st.subheader(f"Su aplicación: {meta['name']} ({'pública' if meta['public'] else 'privada'})")
-    else:
-        st.subheader("Su aplicación")
+        public_toggle(user["id"], meta)
     if not show_app(user["id"]):
         st.write("Todavía no tiene aplicación.")
     try:
