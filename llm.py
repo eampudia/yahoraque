@@ -88,10 +88,21 @@ def _rest_seconds(error):
     return 0
 
 
-def generate(system_prompt, messages):
+def lightest_first(models):
+    """flash-lite, then flash, then pro, newest first within each tier.
+
+    For the apps' AI: in the free tier each model has its own quota, so the
+    apps do not use up the quota of the models that build them.
+    """
+    return sorted(models, key=lambda name: -TIER_RANK[MODEL_PATTERN.match(name).group(2)])
+
+
+def generate(system_prompt, messages, image=None, light=False, max_output_tokens=None):
     """Answer a conversation.
 
     messages: list of {"role": "user" | "assistant", "content": str}.
+    image: optional {"data": bytes, "mime_type": str}, sent with the last message.
+    light: try the lightest models first (see lightest_first).
     """
     contents = [
         types.Content(
@@ -100,13 +111,21 @@ def generate(system_prompt, messages):
         )
         for message in messages
     ]
-    config = types.GenerateContentConfig(system_instruction=system_prompt)
+    if image:
+        contents[-1].parts.append(
+            types.Part.from_bytes(data=image["data"], mime_type=image["mime_type"])
+        )
+    config = types.GenerateContentConfig(
+        system_instruction=system_prompt, max_output_tokens=max_output_tokens
+    )
 
     try:
         models = available_models()
     except Exception as error:
         logging.exception("Could not list models")
         raise AIUnavailable("No se han podido listar los modelos.") from error
+    if light:
+        models = lightest_first(models)
 
     resting = _resting_until()
     for model in models:

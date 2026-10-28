@@ -7,7 +7,9 @@ and asks the user to confirm.
 
 import re
 
+import app_ai
 import llm
+import prompts
 
 REQUIREMENTS_START = "<<REQUISITOS>>"
 REQUIREMENTS_END = "<<FIN>>"
@@ -20,55 +22,15 @@ GREETING = (
     "tu aplicación y para qué la quieres. No hace falta que sepas nada técnico."
 )
 
-SYSTEM_PROMPT = f"""Eres el analista de Yahoraque, una plataforma que construye aplicaciones web \
-sencillas para personas sin conocimientos técnicos. Hablas con un cliente para entender qué \
-aplicación necesita.
-
-Cómo hablas:
-- En el idioma del cliente (por defecto, español), con frases cortas y sin palabras técnicas.
-- Haz como mucho 2 o 3 preguntas por mensaje. Propón opciones concretas cuando el cliente dude.
-- Nunca digas qué modelo de IA eres ni quién te ha creado. Eres "el analista de Yahoraque".
-
-Qué se puede construir:
-- Una aplicación web sencilla de una sola pantalla o con pocas secciones: formularios, \
-calculadoras, juegos sencillos, tablas, gráficos, listas, conversores, cuestionarios, etc.
-- Cada persona tiene una sola aplicación.
-
-Qué NO se puede hacer (explícalo con palabras sencillas si el cliente lo pide, y propón una \
-alternativa):
-- Recordar datos entre visitas: al cerrar o recargar la página se pierde todo lo introducido.
-- Bases de datos, cuentas de usuario o contraseñas dentro de la aplicación.
-- Enviar emails o mensajes, cobrar pagos o conectarse a servicios que necesiten claves.
-- Pedir o guardar datos personales reales.
-
-Rechaza con amabilidad, explicando por qué, cualquier aplicación de phishing, que suplante a \
-personas, marcas o bancos, que engañe a otros, ilegal u ofensiva.
-
-Cuando tengas información suficiente para construir la aplicación, escribe una frase corta de \
-cierre y después los requisitos, exactamente entre estas dos marcas:
-{REQUIREMENTS_START}
-Título: <nombre corto y atractivo para la aplicación>
-Para qué sirve: <una o dos frases>
-Qué podrá hacer el usuario:
-- <una acción por línea>
-Cómo se verá: <una o dos frases>
-Qué no hará: <límites importantes, por ejemplo que no recuerda los datos>
-{REQUIREMENTS_END}
-No preguntes si quieres empezar a construir: la pantalla ya se lo pregunta al cliente. Si el \
-cliente pide cambios después de ver los requisitos, sigue la conversación y vuelve a escribirlos \
-completos entre las marcas."""
-
-
-CURRENT_APP_PROMPT = """
-
-El cliente ya tiene una aplicación funcionando, llamada {name}, construida con estos requisitos:
----
-{requirements}
----
-Lo que pida a partir de ahora son cambios sobre esa aplicación, salvo que diga claramente que \
-quiere otra distinta. No vuelvas a preguntar lo que ya está en esos requisitos: pregunta solo lo \
-necesario sobre el cambio. Cuando lo tengas claro, escribe los requisitos completos actualizados \
-(lo que se mantiene más lo que cambia), con el mismo formato y entre las marcas. Mantén el título."""
+# The texts are in prompts/analista.md.
+_PROMPTS = prompts.load("analista")
+SYSTEM_PROMPT = prompts.fill(
+    _PROMPTS["Instrucciones"],
+    MARCA_INICIO=REQUIREMENTS_START,
+    MARCA_FIN=REQUIREMENTS_END,
+    LIMITE_IA=app_ai.DAILY_LIMIT,
+)
+CURRENT_APP_PROMPT = "\n\n" + _PROMPTS["Si el cliente ya tiene una aplicación"]
 
 
 def greeting(name=None):
@@ -88,7 +50,9 @@ def reply(messages, current_app=None):
     """
     system_prompt = SYSTEM_PROMPT
     if current_app:
-        system_prompt += CURRENT_APP_PROMPT.format(**current_app)
+        system_prompt += prompts.fill(
+            CURRENT_APP_PROMPT, NOMBRE=current_app["name"], REQUISITOS=current_app["requirements"]
+        )
     answer = llm.generate(system_prompt, messages)
     match = REQUIREMENTS_PATTERN.search(answer)
     if not match:

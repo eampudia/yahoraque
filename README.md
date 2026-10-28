@@ -19,12 +19,13 @@ Cualquier persona sin conocimientos de programación que quiera una aplicación 
 2. **Hablas con el analista.** Le cuentas qué quieres con tus palabras. Te hace preguntas y te enseña los requisitos en lenguaje sencillo.
 3. **Confirmas y se construye.** La IA escribe la app, le inventa un nombre (por ejemplo «Aguatín» para un contador de vasos de agua), comprueba que arranca y, si falla, la arregla hasta 2 veces. Mientras esperas, salen frases divertidas («Consultando con mi gato, que sabe mucho de esto…»).
 4. **La usas.** Tu app aparece en el menú con su nombre.
-5. **La compartes o la cambias.** La puedes hacer pública: aparece en «Apps públicas» y cualquiera la abre con un enlace, sin cuenta. Puedes pedir cambios en el chat (el analista ya conoce tu app) o borrarla y empezar otra.
-6. **El admin** ve a todos los usuarios en la barra lateral, abre sus apps, las publica u oculta y puede borrar usuarios.
+5. **Con IA, si hace falta.** Tu app también puede usar IA: corregir o resumir textos, traducir o leer una foto (por ejemplo, una redacción manuscrita), con un límite de 30 usos al día. Esas apps llevan la marca «Con IA».
+6. **La compartes o la cambias.** La puedes hacer pública: aparece en «Apps públicas» y cualquiera la abre con un enlace, sin cuenta. Puedes pedir cambios en el chat (el analista ya conoce tu app) o borrarla y empezar otra.
+7. **El admin** ve a todos los usuarios en la barra lateral, abre sus apps, las publica u oculta y puede borrar usuarios.
 
 ## La pieza de IA
 
-- **Qué usa:** la API de Gemini (librería `google-genai`) en la capa gratuita, con dos roles: el **analista**, que conversa y escribe los requisitos, y el **desarrollador**, que genera la app como página HTML, CSS y JavaScript con Pico CSS, Chart.js, canvas-confetti, Alpine.js o p5.js. El modelo no está fijo: Yahoraque lista los modelos disponibles para la clave, los ordena por versión y potencia (pro > flash > flash-lite) y usa el mejor que responda.
+- **Qué usa:** la API de Gemini (librería `google-genai`) en la capa gratuita, con tres roles: el **analista**, que conversa y escribe los requisitos; el **desarrollador**, que genera la app como página HTML, CSS y JavaScript con Pico CSS, Chart.js, canvas-confetti, Alpine.js o p5.js; y la **IA de las apps**, que las apps generadas usan con la función `ia()` (texto e imágenes) a través de Yahoraque, sin ver nunca la clave, con los modelos más ligeros y 30 usos al día por app. El modelo no está fijo: Yahoraque lista los modelos disponibles para la clave, los ordena por versión y potencia (pro > flash > flash-lite) y usa el mejor que responda.
 - **Por qué esa opción:** es gratuita y, de las opciones gratuitas, la que mejor se comporta escribiendo código. El usuario nunca ve qué modelo se usa, así que se puede cambiar de proveedor sin que lo note.
 - **Qué pasa si falla:**
   - **Si falla un modelo** (cuota agotada, saturado, sin respuesta en 60 s), se repite la misma petición con el siguiente sin mostrar nada. El que falla se aparta un tiempo: 24 h sin cuota diaria, 1 min si es límite por minuto, 5 min si está saturado.
@@ -36,7 +37,8 @@ Cualquier persona sin conocimientos de programación que quiera una aplicación 
 
 - **Herramientas:** Claude Code (extensión de VS Code) como agente, Docker para ejecutar y probar todo, y Playwright para las pruebas con navegadores reales (Chrome, Firefox y Safari/WebKit). [Añade otras si las usaste, por ejemplo la herramienta con la que hiciste el logo.]
 - **Fichero de contexto del agente:** [CLAUDE.md](CLAUDE.md). Le obliga a trabajar solo en Docker, a fijar versiones, a no subir secretos, a no hacer commit sin mi permiso y a convertir mis ideas en reglas comprobables en [especificacion.md](especificacion.md).
-- **Prompts clave** (copiados tal cual):
+- **Prompts de la app:** las instrucciones que recibe la IA están en [prompts/analista.md](prompts/analista.md), [prompts/desarrollador.md](prompts/desarrollador.md) y [prompts/ia_apps.md](prompts/ia_apps.md) (la IA que usan las apps). El código las lee de ahí, así que se pueden leer y reutilizar tal cual.
+- **Prompts clave al agente** (copiados tal cual):
   1. «continua con el modo desarrollador»
   2. «cuando entro con el usuario administrador, tengo que poder ver en la barra de la izquierda los usuarios que se han registrado y tengo que poder borrarlos y ver sus aplicaciones»
   3. «cuando te pida modificaciones de la aplicacion, usa la información de la aplicacion que ya tenemos creada. Porque no la incluyes en el contexto.»
@@ -63,6 +65,8 @@ Cualquier persona sin conocimientos de programación que quiera una aplicación 
 | Yo como usuario | Abrir el enlace de una app pública | Pedía iniciar sesión, y al entrar acababa en otra página | Las apps públicas se abren sin cuenta; si la app es privada, tras entrar se llega a ella. Además, el enlace se muestra completo con botón de copiar. |
 | Yo como usuario | Pedir un cambio en mi app | El analista empezaba de cero y volvía a preguntarlo todo | El analista recibe el nombre y los requisitos de la app actual y solo pregunta por el cambio. |
 | Pruebas automáticas del agente | Intentar saltarse los guardarraíles | Una app podía crear un widget con `key="user"` y hacerse admin, su JavaScript podía manejar la página de quien la veía, y `st.video` podía servir el fichero de secretos | Claves con prefijo por app, JavaScript en un marco con origen aislado (`data:`) y medios solo desde direcciones web. |
+| Yo como usuario | Redacpro, mi corrector de redacciones de francés para profesores | Parecía corregir, pero eran 14 reglas fijas; y al subir una foto **no la leía**: corregía una frase de ejemplo inventada como si fuera del alumno | Las apps pueden usar IA con `ia()` (texto e imágenes) y llevan la marca «Con IA»; el Analista avisa de lo que no se puede hacer y el Desarrollador tiene prohibido simular funciones o inventar datos. Reconstruida con IA, lee la foto, detecta si está en francés y pone nota con los errores explicados. |
+| Pruebas automáticas del agente | Corregir la foto de una redacción con faltas | Al leer la foto, la IA corregía sin querer «a la plage» y «parceque», y esos errores no puntuaban (4 errores detectados) | Las instrucciones de la IA de las apps exigen transcribir letra a letra, con los errores: pasó a detectar 7. |
 | Pruebas automáticas del agente | Construir apps con la cuota de los mejores modelos agotada | Un modelo más flojo insistía en `import streamlit` y la construcción fallaba | Esas líneas se quitan solas y el mensaje de error le dice a la IA qué hacer. |
 
 

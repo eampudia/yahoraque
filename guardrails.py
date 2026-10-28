@@ -23,6 +23,7 @@ from types import ModuleType, SimpleNamespace
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
+import app_ai
 import app_theme
 
 ALLOWED_MODULES = {
@@ -294,6 +295,8 @@ def run(code, app_id):
         "__builtins__": {**SAFE_BUILTINS, "__import__": _safe_import},
         "__name__": "__app__",
         "st": app_st,
+        # AI through Yahoraque, with daily limits; the key never reaches the app.
+        "ia": app_ai.make_ia(app_id),
         # Usual alias from "import streamlit.components.v1 as components".
         "components": app_st.components.v1,
     }
