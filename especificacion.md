@@ -3,10 +3,19 @@
 
 ## 1. Problema y usuario
 
-- **Quién tiene el problema:** Cualquier persona sin conocimientos de desarrollo de software que quiera crear una aplicación web simple.
-- **Cómo lo resuelve hoy:** Usando las herramientas que puedan existir o contratando un desarrollo.
-- **Qué le molesta de cómo lo hace hoy:** La herramienta no hace todo lo que se necesita, o es caro de desarrollar.
-- **Qué parte resuelve la IA:** La IA ayuda a la especificación y al desarrollo.
+- **Quién tiene el problema:** un **docente** (primaria, secundaria, FP o academia) sin conocimientos de programación que necesita pequeñas aplicaciones para su día a día en clase: hacer grupos al azar, un juego de preguntas para repasar, calcular la nota media con porcentajes…
+  - **Caso especial, el profesor de idiomas:** corrige muchas redacciones (en el ejemplo de referencia, en francés) y quiere una herramienta que lea el texto, aunque sea una foto de una redacción manuscrita, detecte si está en el idioma pedido y le proponga una nota con los errores explicados según el nivel del alumno.
+- **Cómo lo resuelve hoy:** con hojas de cálculo, herramientas genéricas (formularios, plataformas de concursos) que no se ajustan del todo a lo que necesita, o a mano; corregir redacciones se lleva buena parte de su tiempo fuera de clase. Encargar una aplicación a medida es caro y lento, y su centro no tiene presupuesto ni programador.
+- **Qué le molesta de cómo lo hace hoy:** las herramientas genéricas no hacen exactamente lo que necesita y no sabe programar para adaptarlas.
+- **Qué parte resuelve la IA:**
+  1. **Analista:** convierte su idea, contada con sus palabras, en requisitos claros.
+  2. **Desarrollador:** escribe la aplicación, la prueba y la corrige sola.
+  3. **IA dentro de la app:** cuando la app lo necesita, corrige, resume, traduce o lee el texto de una foto (por ejemplo, la redacción manuscrita).
+- **Qué queda fuera:**
+  - Guardar datos entre sesiones (por ejemplo, las notas de todo un trimestre) y conectarse a la plataforma del centro (Moodle, Classroom…).
+  - Datos personales reales de los alumnos: se recomienda no poner nombres reales, porque los textos se envían a la IA de la capa gratuita (sección 11).
+  - La decisión final: la IA **propone** una nota y unos errores, y el docente la revisa. Puede equivocarse, sobre todo con letra difícil de leer.
+- Yahoraque está pensada para docentes, pero cualquiera puede registrarse y crear su app.
 
 ## 2. Qué hace el producto
 
@@ -80,7 +89,7 @@
 | Hacer pública o privada una app | No | Sí, solo la suya | Sí, cualquiera |
 | Ver una app privada | No | Solo la suya | Sí |
 | Borrar una app | No | Sí, solo la suya | Solo junto con su usuario |
-| Borrar una cuenta | No | Pendiente (ver más abajo) | Sí, cualquiera |
+| Borrar una cuenta | No | Sí, solo la suya | Sí, cualquiera |
 
 - Cada usuario registrado tiene **una sola aplicación**. Para tener otra distinta, borra la suya y crea una nueva (o pide cambios en el chat).
 - Hay un único admin (el propietario de Yahoraque). Puede borrar cualquier usuario junto con su aplicación.
@@ -105,6 +114,11 @@
 - Se recomienda al usuario usar un alias en lugar de su nombre real.
 - **"Privada" significa que solo se puede usar desde Yahoraque por su dueño**, no que el código sea secreto. El repositorio de GitHub es público (ver sección 11).
 
+### Borrar mi cuenta
+- En la barra lateral, debajo de «Salir», los usuarios registrados (no el invitado ni el admin) tienen «Borrar mi cuenta». Abre un desplegable: «Se borrarán tu cuenta, tu aplicación y todas sus versiones. No se puede deshacer.» y el botón «Sí, borrar mi cuenta».
+- Al confirmar se borra su carpeta entera, se cierra la sesión (como «Salir», también la cookie) y se muestra «Tu cuenta se ha borrado.» en la pantalla de acceso. Con ese nombre se puede volver a registrar cualquiera.
+- Si falla: «No hemos podido borrar tu cuenta. Inténtalo de nuevo en un rato.»
+
 ### Gestión de usuarios (solo admin)
 - **Listado:** cuando entra el admin, la barra de la izquierda muestra, debajo del menú, todos los usuarios registrados ordenados por nombre (sin distinguir mayúsculas). El admin no aparece en la lista. Los invitados y los usuarios no ven esta lista.
 - **Detalle:** al pulsar un usuario se abre la página «Usuarios» con su nombre, la fecha de registro, el nombre de su aplicación, el interruptor «Pública», la aplicación funcionando y sus requisitos (desplegables). Si no tiene: «Todavía no tiene aplicación».
@@ -123,7 +137,8 @@
    - El admin ve lo mismo para su propia app, más «Usuarios».
    - Al terminar de construir la app, el usuario sigue en el chat con el mensaje «¡Tu aplicación <nombre> está lista!» y el menú ya muestra el nombre. Al borrarla, vuelve al chat y el menú vuelve a «Inicio».
 4. Para crear o modificar su app, entra en **modo Analista**: describe lo que quiere y el sistema le hace preguntas hasta tener los requerimientos.
-5. El sistema le muestra los requerimientos en lenguaje sencillo y le pregunta si quiere empezar.
+   - **Ideas de ejemplo:** si todavía no tiene app y el chat está vacío, aparecen cuatro botones con ideas del día a día de un docente: «📝 Corregir redacciones de idiomas», «🎲 Hacer grupos al azar», «❓ Un juego de preguntas para repasar» y «🧮 Calcular la nota media». Al pulsar uno, su texto se envía como primer mensaje al analista.
+5. El sistema le muestra los requerimientos en lenguaje sencillo (las etiquetas en negrita, cada una en su línea) y le pregunta si quiere empezar, avisando de que «Construirla tarda 1 o 2 minutos.»
 6. Al confirmar, el sistema construye la app y guarda una nueva versión.
 7. El usuario elige si su app es pública o privada (ver «Nombre, visibilidad y borrado de la app»).
 8. El usuario puede volver a una versión anterior de su app (ver «Versiones de la app»).
@@ -269,7 +284,7 @@
 ### Uso de la IA
 - La elección del modelo y el cambio automático cuando falla se describen en la sección 4 («Elección del modelo»).
 - Una app se genera en una sola petición, para que todo su código salga del mismo modelo. Si esa petición falla, se repite entera con el siguiente modelo.
-- No hay límite de mensajes por usuario.
+- **Límite de construcciones:** cada usuario puede construir su app como mucho **10 veces al día** (cada pulsación de «¡Sí, adelante!» cuenta, salga bien o mal); el admin no tiene límite. Al llegar al tope: «Hoy ya has construido tu aplicación 10 veces, que es el máximo del día. Vuelve a intentarlo mañana.» El contador está en memoria y se reinicia si se reinicia el servidor. Los mensajes al analista no tienen límite.
 
 ## 8. Restricciones
 
@@ -303,7 +318,8 @@ La app está bien si:
 - Un usuario puede volver a una versión anterior de su app: tras cambiarla, en «Versiones» aparecen las dos; al restaurar la primera, la app vuelve a ser la de antes, la lista marca esa como «la que tienes ahora» y la más nueva sigue disponible para volver.
 - Tras restaurar, el chat «Cambiar <nombre>» muestra en «Lo que ya me pediste» los requisitos de la versión restaurada.
 - Con 12 construcciones quedan 10 versiones (desaparecen las 2 más antiguas). Al borrar la app se borran también sus versiones.
-- Un usuario puede borrar su app (su cuenta sigue y puede crear otra). Borrar su propia cuenta está pendiente.
+- Un usuario puede borrar su app (su cuenta sigue y puede crear otra) y su propia cuenta: tras «Borrar mi cuenta», ve la pantalla de acceso con «Tu cuenta se ha borrado.» y ya no puede entrar con su nombre y PIN.
+- Un usuario nuevo ve las cuatro ideas de ejemplo en el chat vacío; al pulsar una, el analista responde a ese texto.
 - Con una app ya creada, al pedir un cambio en el chat, el analista no vuelve a preguntar lo que ya estaba en los requisitos, y los requisitos nuevos conservan todo lo anterior que no se ha pedido cambiar.
 - Una app recién construida tiene un nombre de una sola palabra, solo letras, de 20 como mucho, y lo conserva al cambiarla desde el chat.
 - Una app nueva es privada: un invitado no la ve en «Apps públicas» (y su enlace se comporta como en el caso límite 22).
@@ -364,6 +380,7 @@ Cada fila es un criterio de aceptación: la app está bien si, en ese caso, pasa
 | 24 | Falla GitHub al guardar, cambiar «Pública», restaurar o borrar | «No hemos podido guardar tu aplicación…», «No hemos podido cambiarlo…» (el interruptor vuelve a lo guardado, sin recargas en bucle), «No hemos podido restaurarla…», «No hemos podido borrar…». En todos, lo anterior sigue como estaba. | Con un `GITHUB_TOKEN` sin permiso de escritura. |
 | 25 | Dos guardados chocan en el mismo fichero | Se reintenta hasta 3 veces. | Dos pestañas guardando a la vez. |
 | 26 | La rama `datos` no existe | Se crea sola en el primer guardado, a partir de la rama principal. | Borrarla y registrar un usuario. |
+| 35 | Un usuario intenta construir su app por 11.ª vez en el día | «Hoy ya has construido tu aplicación 10 veces, que es el máximo del día. Vuelve a intentarlo mañana.» No se llama a la IA; los requisitos siguen pendientes. El admin no tiene límite. | Con 10 construcciones hechas, pulsar «¡Sí, adelante!». |
 | **IA dentro de las apps** | | | |
 | 27 | Una app con IA llega a su límite del día | «Esta aplicación ya ha usado la IA 30 veces hoy, que es el máximo. Vuelve a intentarlo mañana.» No se llama al modelo. | Con el límite a 2, la tercera pregunta distinta da el aviso. |
 | 28 | La IA no está disponible para una app (cuota agotada, sin conexión) | «La IA no está disponible ahora mismo. Inténtalo más tarde.» en la app; el resto de Yahoraque sigue funcionando. | Con una `GOOGLE_API_KEY` no válida. |
@@ -387,7 +404,7 @@ Cada fila es un criterio de aceptación: la app está bien si, en ese caso, pasa
 - **Altura fija del marco:** si la IA se queda corta, parte de la app queda cortada o con scroll interno.
 - **Bucles infinitos al usar la app:** la prueba de arranque solo cubre la primera carga. Si el Python de una app entra en un bucle infinito al pulsar un botón, bloquea la sesión de quien la usa y gasta CPU del servidor hasta que se reinicia. Un bucle infinito en el JavaScript solo bloquea la pestaña de quien la usa, no el servidor.
 - **Construcción lenta:** construir una app puede tardar más de un minuto, sobre todo si varios modelos están saturados y hay que probar el siguiente.
-- **Sin límite de mensajes:** un único usuario muy activo puede agotar la cuota gratuita del día para todos.
+- **Cuota compartida:** las construcciones tienen límite (10 por usuario y día), pero los mensajes al analista no, y el contador está en memoria. Muchos usuarios a la vez podrían agotar la cuota gratuita del día; entonces aparece «Los astros no están alineados…».
 - **Cuota de la IA de las apps:** el límite de 30 usos al día por app está en memoria (se reinicia con el servidor) y muchas apps a la vez podrían agotar la cuota de los modelos ligeros. Entonces las apps con IA muestran «La IA no está disponible…», pero el Analista y el Desarrollador siguen funcionando, porque usan otros modelos.
 - **La IA de las apps se puede equivocar:** una corrección o una lectura de letra difícil pueden tener errores. Por eso las apps lo dicen («Qué no hará») y llevan la marca «Con IA».
 - **Historial de git:** al borrar una cuenta, sus versiones antiguas siguen en el historial del repositorio.
@@ -399,8 +416,9 @@ Cada fila es un criterio de aceptación: la app está bien si, en ese caso, pasa
 
 ## 12. Por decidir
 
-- **Borrar su propia cuenta:** la tabla de permisos lo permitía al usuario, pero de momento solo lo hace el admin. ¿Se añade un botón «Borrar mi cuenta»?
+Nada pendiente por ahora.
 
 ## 13. Despliegue
 
 - **Ruta:** https://yahoraque.streamlit.app/
+- **Fichero principal:** `app.py`. La app de Streamlit Cloud se desplegó con `init.py`, que solo ejecuta `app.py` en cada recarga; así no hace falta volver a desplegarla. En local, Docker arranca `app.py`.

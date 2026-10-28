@@ -12,4 +12,4 @@ import streamlit as st
 sys.path.insert(0, "/app")
 
 type(st.context).cookies = property(lambda self: {})
-exec(open("/app/init.py").read(), {"__file__": "/app/init.py", "__name__": "__main__"})
+exec(open("/app/app.py").read(), {"__file__": "/app/app.py", "__name__": "__main__"})

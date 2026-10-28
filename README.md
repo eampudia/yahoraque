@@ -7,20 +7,20 @@
 
 ## Pitch
 
-Mucha gente necesita una aplicación pequeña (una calculadora para su negocio, un juego para clase, un control de gastos) y no sabe programar ni puede pagar un desarrollo. Yahoraque te deja describirla hablando con un analista y la construye, la publica y te da un enlace para compartirla. La IA hace dos trabajos: de analista, que convierte una idea vaga en requisitos claros, y de programador, que escribe la app en HTML y JavaScript, la prueba y la corrige sola. Probarla con navegadores reales destapó fallos que en local no se veían: la sesión se perdía al recargar en Streamlit Cloud, los enlaces públicos pedían iniciar sesión, y una app maliciosa podía hacerse pasar por admin con un simple `key="user"`. Un ejemplo: pedí una calculadora de propinas y en 20 segundos tenía «Propinator» funcionando; lo siguiente sería poder volver a versiones anteriores y que las apps guarden datos.
+Un docente necesita cada semana pequeñas herramientas que nadie le hace (hacer grupos al azar, un juego para repasar o, si es profesor de idiomas, corregir decenas de redacciones), y ni sabe programar ni su centro tiene presupuesto para encargarlas. Con Yahoraque lo describe hablando con un analista y en uno o dos minutos tiene su aplicación funcionando, con nombre propio, versiones y un enlace para compartirla con alumnos y compañeros. La IA hace tres trabajos: convierte una idea vaga en requisitos claros, escribe y prueba la aplicación, y dentro de ella puede leer la foto de una redacción manuscrita y proponer una nota con los errores explicados. Probarla como profesor fue lo que más me enseñó: mi corrector de francés parecía funcionar, pero al subir una foto corregía una frase inventada; ahora la IA lee la foto, detecta si está en francés y encontró los 7 errores de una redacción de prueba. El siguiente paso es probarla con los profesores de un centro y que las aplicaciones puedan guardar datos, como las notas de un trimestre.
 
 ## El problema
 
-Cualquier persona sin conocimientos de programación que quiera una aplicación web sencilla: autónomos, docentes, asociaciones, gente con una afición. Hoy usa herramientas genéricas que no hacen exactamente lo que necesita, o encarga un desarrollo que es caro y lento para algo pequeño. Merece la pena resolverlo porque la mayoría de estas apps son simples, y la IA ya escribe bien ese tipo de código: lo que falta es alguien que pregunte lo necesario y un sitio seguro donde ejecutarla.
+Un docente (de primaria, secundaria, FP o academia) necesita a diario pequeñas herramientas para su clase: hacer grupos, repasar con un juego, calcular notas con porcentajes y, si es profesor de idiomas, corregir muchas redacciones, a veces manuscritas. Hoy usa hojas de cálculo y herramientas genéricas que no se ajustan del todo, o lo hace a mano; encargar una aplicación a medida es caro y lento, y no sabe programarla. Merece la pena resolverlo porque son aplicaciones pequeñas que la IA ya sabe construir: lo que faltaba era alguien que pregunte lo necesario y un sitio seguro y gratuito donde ejecutarlas y compartirlas. La IA no sustituye al docente: le propone una nota y unos errores, y él decide; tampoco guarda datos entre sesiones ni se conecta a la plataforma del centro.
 
 ## Qué hace la app
 
 1. **Entras** con un nombre y un PIN (la sesión se recuerda 7 días), o como invitado para usar las apps públicas.
-2. **Hablas con el analista.** Le cuentas qué quieres con tus palabras. Te hace preguntas y te enseña los requisitos en lenguaje sencillo.
+2. **Hablas con el analista.** Le cuentas qué quieres con tus palabras, o pulsas una idea de ejemplo («📝 Corregir redacciones de idiomas», «🎲 Hacer grupos al azar»…). Te hace preguntas y te enseña los requisitos en lenguaje sencillo.
 3. **Confirmas y se construye.** La IA escribe la app, le inventa un nombre (por ejemplo «Aguatín» para un contador de vasos de agua), comprueba que arranca y, si falla, la arregla hasta 2 veces. Mientras esperas, salen frases divertidas («Consultando con mi gato, que sabe mucho de esto…»).
 4. **La usas.** Tu app aparece en el menú con su nombre.
 5. **Con IA, si hace falta.** Tu app también puede usar IA: corregir o resumir textos, traducir o leer una foto (por ejemplo, una redacción manuscrita), con un límite de 30 usos al día. Esas apps llevan la marca «Con IA».
-6. **La compartes o la cambias.** La puedes hacer pública: aparece en «Apps públicas» y cualquiera la abre con un enlace, sin cuenta. Puedes pedir cambios en el chat (el analista ya conoce tu app) o borrarla y empezar otra.
+6. **La compartes o la cambias.** La puedes hacer pública: aparece en «Apps públicas» y cualquiera la abre con un enlace, sin cuenta. Puedes pedir cambios en el chat (el analista ya conoce tu app), volver a cualquiera de sus 10 últimas versiones, borrarla y empezar otra, o borrar tu cuenta.
 7. **El admin** ve a todos los usuarios en la barra lateral, abre sus apps, las publica u oculta y puede borrar usuarios.
 
 ## La pieza de IA
@@ -35,7 +35,7 @@ Cualquier persona sin conocimientos de programación que quiera una aplicación 
 
 ## Cómo la he construido
 
-- **Herramientas:** Claude Code (extensión de VS Code) como agente, Docker para ejecutar y probar todo, y Playwright para las pruebas con navegadores reales (Chrome, Firefox y Safari/WebKit). [Añade otras si las usaste, por ejemplo la herramienta con la que hiciste el logo.]
+- **Herramientas:** Claude Code (extensión de VS Code) como agente, Docker para ejecutar y probar todo, y Playwright para las pruebas con navegadores reales (Chrome, Firefox y Safari/WebKit).
 - **Fichero de contexto del agente:** [CLAUDE.md](CLAUDE.md). Le obliga a trabajar solo en Docker, a fijar versiones, a no subir secretos, a no hacer commit sin mi permiso y a convertir mis ideas en reglas comprobables en [especificacion.md](especificacion.md).
 - **Prompts de la app:** las instrucciones que recibe la IA están en [prompts/analista.md](prompts/analista.md), [prompts/desarrollador.md](prompts/desarrollador.md) y [prompts/ia_apps.md](prompts/ia_apps.md) (la IA que usan las apps). El código las lee de ahí, así que se pueden leer y reutilizar tal cual.
 - **Prompts clave al agente** (copiados tal cual):
@@ -44,6 +44,8 @@ Cualquier persona sin conocimientos de programación que quiera una aplicación 
   3. «cuando te pida modificaciones de la aplicacion, usa la información de la aplicacion que ya tenemos creada. Porque no la incluyes en el contexto.»
   4. «Me gustaria que las aplicaciones que crea, se creasen en javascript (pero el codigo de python) siempre que fuera posible.»
   5. «crees que podria utilizar alguna libreria grafica de python para mejorar la creacion de aplicaciones?»
+  6. «Si, haz primero lo de los prompts y despues implementa IA, marca la aplicacion deae alguna manera para saber que usa IA»
+  7. «Me gusta mas un profesor, que necesita aplicaciones para su dia a dia, aunque con el caso especial de un profesor de idiomas. Y haz todo lo demas.»
 - **Qué delegué al agente y qué revisé a mano:**
   - **Delegué:**
     - El código: analista, desarrollador, guardarraíles, sesión, almacenamiento en GitHub y menús.
@@ -89,14 +91,28 @@ docker compose --profile test run --rm e2e python e2e_session.py
 
 ## Capturas
 
-**Apps públicas, vistas por el admin.** Cada app tiene el nombre que le inventó la IA y la frase «Para qué sirve» de sus requisitos. En la barra lateral, debajo del menú, el admin ve a los usuarios registrados. El primero sale con su hash porque se registró antes de que se guardaran los nombres.
-
-![Apps públicas vistas por el admin](assets/APP%20Publicas.png)
+### La aplicación funcionando
 
 **Javijator, abierta por un invitado.** Una app pública generada por la IA en HTML y JavaScript, con el estilo de Yahoraque (títulos en Fredoka, colores del logo). Quien la abre no tiene cuenta: entra como invitado.
 
 ![Javijator abierta por un invitado](assets/APP%20javijator.png)
 
+**Apps públicas, vistas por el admin.** Cada app tiene el nombre que le inventó la IA y la frase «Para qué sirve» de sus requisitos. En la barra lateral, debajo del menú, el admin ve a los usuarios registrados. El primero sale con su hash porque se registró antes de que se guardaran los nombres.
+
+![Apps públicas vistas por el admin](assets/APP%20Publicas.png)
+
 **Cambiar una app desde el chat.** Al pulsar «Cambiar mi aplicación», el analista ya conoce la app: saluda por su nombre («Tu aplicación Kawaiicalc ya está funcionando») y en «Lo que ya me pediste» están los requisitos con los que se construyó, así que solo pregunta por el cambio.
 
 ![Chat para cambiar Kawaiicalc](assets/Edita%20APP.png)
+
+### Un caso límite
+
+**Una petición prohibida.** Una profesora pide «una página igual que la de mi banco para que mis alumnos pongan sus claves». El analista real (Gemini) la rechaza: explica que es suplantación (phishing), no escribe requisitos y propone alternativas útiles para clase, como un simulador de presupuesto o un cuestionario de finanzas.
+
+![El analista rechaza una petición de phishing](assets/Caso%20limite%20phishing.png)
+
+### La prueba
+
+**Pruebas automáticas con navegador real.** Salida de `tests/e2e_session.py` en Chrome, Firefox y Safari (WebKit), con Playwright en Docker, contra Yahoraque arrancado como en Streamlit Cloud: se guarda la sesión, sigue al recargar y «Salir» la cierra. Esta prueba se creó a raíz del fallo de la sesión que se perdía en producción (ver «Prueba y mejora»).
+
+![Pruebas con navegador real en tres navegadores](assets/Pruebas%20navegador.png)
