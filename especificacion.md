@@ -56,7 +56,7 @@
 | Ver el listado de apps públicas | Sí | Sí | Sí |
 | Usar una app pública | Sí | Sí | Sí |
 | Crear o modificar una app | No | Sí, solo la suya | Sí |
-| Hacer pública o privada una app | No | Sí, solo la suya | Solo la suya |
+| Hacer pública o privada una app | No | Sí, solo la suya | Sí, cualquiera |
 | Ver una app privada | No | Solo la suya | Sí |
 | Borrar una app | No | Sí, solo la suya | Solo junto con su usuario |
 | Borrar una cuenta | No | Pendiente (ver más abajo) | Sí, cualquiera |
@@ -86,7 +86,8 @@
 
 ### Gestión de usuarios (solo admin)
 - **Listado:** cuando entra el admin, la barra de la izquierda muestra, debajo del menú, todos los usuarios registrados ordenados por nombre (sin distinguir mayúsculas). El admin no aparece en la lista. Los invitados y los usuarios no ven esta lista.
-- **Detalle:** al pulsar un usuario se abre la página «Usuarios» con su nombre, la fecha de registro, el nombre de su aplicación y si es pública o privada, la aplicación funcionando y sus requisitos (desplegables). Si no tiene: «Todavía no tiene aplicación».
+- **Detalle:** al pulsar un usuario se abre la página «Usuarios» con su nombre, la fecha de registro, el nombre de su aplicación, el interruptor «Pública», la aplicación funcionando y sus requisitos (desplegables). Si no tiene: «Todavía no tiene aplicación».
+- **Publicar u ocultar:** con el interruptor «Pública» el admin puede hacer pública o privada la app de cualquier usuario, igual que su dueño desde la página de su app. El cambio se guarda al momento, aparece o desaparece de «Apps públicas», y el dueño lo ve en su interruptor. Si no se puede guardar, el interruptor vuelve a su posición anterior y se muestra «No hemos podido cambiarlo. Inténtalo de nuevo en un rato.»
 - **Borrado:** en esa página, «Borrar usuario» pide confirmación («Sí, borrar» / «Cancelar»). Al confirmar se elimina la carpeta del usuario entera (cuenta, requisitos y app) y desaparece de la lista. Con ese nombre se puede volver a registrar cualquiera.
 - Si falla la lectura o el borrado, se muestra un mensaje sencillo y el error real va a los logs.
 - La lista se guarda en memoria hasta 5 minutos para no hacer una llamada a GitHub por usuario en cada clic. Se refresca al momento cuando alguien se registra o se borra un usuario.
@@ -117,7 +118,13 @@
   - Una app nueva es **privada**. Cambiar la app desde el chat no cambia su visibilidad.
   - En la página de su app, el dueño tiene el interruptor «Pública» («Aparece en «Apps públicas» y la puede usar cualquiera, también sin cuenta»).
   - **Apps públicas:** página del menú para todos. Para los invitados es la página de inicio. Muestra las apps públicas ordenadas por nombre, con su nombre, la frase «Para qué sirve» de sus requisitos y un enlace «Abrir». Si no hay: «Todavía no hay aplicaciones públicas.»
-  - **Página de cada app:** `/app?app=<hash del dueño>`. Cuando la app es pública, el dueño ve en la página de su app el enlace «Enlace para compartir». Si la app no existe, o es privada y quien la abre no es su dueño ni el admin, se muestra «Esta aplicación no existe o no es pública.», el mismo mensaje en los dos casos, para no revelar qué apps existen.
+  - **Página de cada app:** `/app?app=<hash del dueño>`.
+  - **Enlace para compartir:** cuando la app es pública, el dueño ve en la página de su app la dirección completa (por ejemplo `https://yahoraque.streamlit.app/app?app=<hash>`) en un recuadro con botón de copiar. Se construye con el dominio por el que se entra, sin la ruta interna del marco de Streamlit Cloud (`/~/+/`).
+  - **Abrir un enlace compartido:**
+    - **Sin sesión y app pública:** se abre la app directamente como invitado, sin pantalla de acceso. Ese invitado no se recuerda: si después entra por la portada, ve la pantalla de acceso.
+    - **Con sesión guardada:** entra con su usuario, no como invitado (también en Streamlit Cloud, donde la sesión llega del navegador un instante después).
+    - **Sin sesión y app privada o inexistente:** se ve la pantalla de acceso; al entrar, se le lleva a la página de esa app (la ve si es su dueño o el admin).
+  - Si la app no existe, o es privada y quien la abre no es su dueño ni el admin, se muestra «Esta aplicación no existe o no es pública.», el mismo mensaje en los dos casos, para no revelar qué apps existen.
   - El listado se guarda en memoria hasta 5 minutos y se refresca al momento cuando una app cambia, se publica, se oculta o se borra.
 - **Borrado:**
   - En la página de su app, «Borrar mi aplicación» pide confirmación («Se borrará <nombre> y lo que pediste. Tu cuenta sigue. No se puede deshacer.» / «Sí, borrar» / «Cancelar»).
@@ -271,11 +278,15 @@ La app está bien si:
 - Con una app ya creada, al pedir un cambio en el chat, el analista no vuelve a preguntar lo que ya estaba en los requisitos, y los requisitos nuevos conservan todo lo anterior que no se ha pedido cambiar.
 - Una app recién construida tiene un nombre de una sola palabra, solo letras, de 20 como mucho, y lo conserva al cambiarla desde el chat.
 - Una app nueva es privada: un invitado no la ve en «Apps públicas» ni puede abrirla con su enlace.
+- Al abrir el enlace para compartir de una app pública en un navegador sin sesión, se ve la app directamente, sin pantalla de acceso; con una sesión guardada, se ve con ese usuario.
+- Al abrir el enlace de una app privada sin sesión y entrar como su dueño, se llega a la página de la app.
 - Al activar «Pública», la app aparece en «Apps públicas» y un invitado puede abrirla y usarla; al desactivarlo, deja de aparecer y su enlace muestra «Esta aplicación no existe o no es pública.».
 - Tras borrar su app, el usuario vuelve al chat «Crea tu aplicación», el menú muestra «Inicio» en lugar del nombre y la app desaparece de «Apps públicas».
 - Un usuario sin app ve en el menú «Inicio» y «Apps públicas», y «Inicio» abre el chat. Con app, ve solo el nombre de la app (que la abre) y «Apps públicas»; «Cambiar mi aplicación» aparece solo dentro de la página de la app y abre el chat. Al recargar se mantiene.
 - El admin ve en la barra de la izquierda a todos los usuarios registrados; los demás no ven esa lista.
 - El admin puede abrir cualquier usuario y ver su aplicación (pública o privada), su nombre y sus requisitos.
+- El admin puede hacer pública la app de otro usuario (un invitado la ve en «Apps públicas») y volver a hacerla privada (deja de verse).
+- Si falla el guardado al cambiar «Pública», el interruptor vuelve a mostrar lo que hay guardado y aparece el aviso, sin recargas en bucle.
 - Tras confirmar el borrado, el usuario desaparece de la lista, su carpeta ya no existe y no puede entrar con su nombre y PIN.
 - El código generado no consigue leer los secretos.
 - Al confirmar unos requisitos, se construye una app que aparece en el menú del dueño con su nombre y en «Usuarios» del admin.

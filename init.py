@@ -5,6 +5,7 @@ Access with name + PIN, guest or admin.
 
 import logging
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import streamlit as st
 
@@ -124,27 +125,57 @@ def home_page():
         st.switch_page(my_app_page)
 
     st.title(meta["name"])
-    change, share = st.columns(2)
-    change.page_link(my_app_page, label="Cambiar mi aplicación", icon=":material/edit:")
-    public = st.toggle(
-        "Pública",
-        value=meta["public"],
-        help="Aparece en «Apps públicas» y la puede usar cualquiera, también sin cuenta.",
-    )
-    if public != meta["public"]:
-        try:
-            apps.set_public(user["id"], public)
-        except Exception:
-            logging.exception("Changing visibility failed")
-            st.error("No hemos podido cambiarlo. Inténtalo de nuevo en un rato.")
-        st.rerun()
+    st.page_link(my_app_page, label="Cambiar mi aplicación", icon=":material/edit:")
+    public_toggle(user["id"], meta)
     if meta["public"]:
-        share.page_link(
-            view_page, label="Enlace para compartir", icon=":material/share:", query_params={"app": user["id"]}
-        )
+        st.caption(":material/share: Enlace para compartir (pulsa el icono de copiar):")
+        st.code(share_url(user["id"]), language=None)
 
     show_app(user["id"])
     delete_my_app(user["id"], meta["name"])
+
+
+def share_url(uid):
+    """Full address of an app's page, to copy and send.
+
+    Built from the domain only: on Streamlit Cloud the page runs inside an
+    iframe whose own path (/~/+/) should not end up in the link.
+    """
+    address = urlsplit(st.context.url)
+    return f"{address.scheme}://{address.netloc}/{VIEW_URL_PATH}?app={uid}"
+
+
+def is_public_app(uid):
+    try:
+        meta = apps.load_meta(uid)
+    except Exception:
+        logging.exception("Loading app data failed")
+        return False
+    return bool(meta and meta.get("public"))
+
+
+def public_toggle(uid, meta):
+    """The "Pública" switch of an app, for its owner and for the admin."""
+    key = f"public_{uid}"
+
+    def save():
+        try:
+            apps.set_public(uid, st.session_state[key])
+        except Exception:
+            logging.exception("Changing visibility failed")
+            # Back to what is saved, so the switch does not lie.
+            st.session_state[key] = meta["public"]
+            st.session_state.public_failed = True
+
+    st.toggle(
+        "Pública",
+        value=meta["public"],
+        key=key,
+        on_change=save,
+        help="Aparece en «Apps públicas» y la puede usar cualquiera, también sin cuenta.",
+    )
+    if st.session_state.pop("public_failed", False):
+        st.error("No hemos podido cambiarlo. Inténtalo de nuevo en un rato.")
 
 
 def delete_my_app(uid, name):
@@ -343,10 +374,9 @@ def users_page():
         st.caption(f"Registrado el {user['created_at'][:10]}")
 
     meta = app_meta(user["id"])
+    st.subheader(f"Su aplicación: {meta['name']}" if meta else "Su aplicación")
     if meta:
-        st.subheader(f"Su aplicación: {meta['name']} ({'pública' if meta['public'] else 'privada'})")
-    else:
-        st.subheader("Su aplicación")
+        public_toggle(user["id"], meta)
     if not show_app(user["id"]):
         st.write("Todavía no tiene aplicación.")
     try:
@@ -415,10 +445,19 @@ else:
     browser_token = session_cookie.sync()
 
 # After "Salir" the old cookie may still be in this connection's headers: ignore it.
-if user is None and not logged_out:
-    user = restored_user(browser_token)
-    if user:
-        st.session_state.user = user
+if not logged_out and (user is None or st.session_state.get("shared_guest")):
+    restored = restored_user(browser_token)
+    if restored:
+        user = st.session_state.user = restored
+    # A saved session wins over the guest of a shared link, but only until the
+    # browser has answered (on Streamlit Cloud it answers one rerun later).
+    if restored or browser_token is not None:
+        st.session_state.shared_guest = False
+shared_app = st.query_params.get("app")
+if user is None and not logged_out and shared_app and is_public_app(shared_app):
+    # A link to a public app opens without logging in; this guest is not remembered.
+    user = st.session_state.user = auth.guest()
+    st.session_state.shared_guest = browser_token is None
 if user is None:
     login_page()
     st.stop()
@@ -458,6 +497,9 @@ off_menu = [view_page, my_app_page] if my_app else [view_page]
 # Our own menu, so the logo can go above it at a readable size
 # (st.logo is at most 32px high).
 navigation = st.navigation(pages, position="hidden")
+if shared_app and navigation.url_path != VIEW_URL_PATH:
+    # Logging in from a shared link loses the page ("/app" becomes "/"): go back to it.
+    st.switch_page(view_page, query_params={"app": shared_app})
 
 # After st.navigation, so the links and user buttons can switch page.
 with st.sidebar:
