@@ -21,6 +21,7 @@
 - El usuario puede volver al chat en cualquier momento para pedir cambios.
 - La aplicación es privada (solo la ven su dueño y el admin) hasta que el dueño la hace pública; entonces la puede usar cualquiera, también los invitados sin cuenta.
 - El dueño puede borrar su aplicación y empezar otra.
+- Las aplicaciones pueden usar IA (por ejemplo, para corregir un texto o leer una foto), con un límite de usos al día; las que la usan llevan la marca «Con IA».
 
 ## 4. La pieza de IA
 
@@ -42,12 +43,32 @@
    - Error en la petición (probablemente un fallo nuestro): no se aparta.
 5. **Si fallan todos:** se muestra "Los astros no están alineados, inténtalo más tarde."
 6. **Registro interno:** qué modelo respondió y cuáles fallaron se anota en los logs, nunca en la pantalla del usuario.
-- **Instrucciones para el modelo (system prompt):**
+- **Instrucciones para el modelo (system prompt):** el texto exacto está en [prompts/analista.md](prompts/analista.md) y [prompts/desarrollador.md](prompts/desarrollador.md), y el código los lee de ahí (`prompts.py`), así que lo que se ve en esos ficheros es lo que recibe la IA. Las partes que cambian van como `{MARCADORES}` (las marcas de los requisitos, los módulos y funciones permitidos, el kit de librerías…), explicados al principio de cada fichero. Resumen:
   - **Modo Analista:** se comporta como un analista tratando con un cliente. Hace las preguntas necesarias y, cuando ve que puede diseñar algo, muestra los requerimientos en lenguaje no técnico y pregunta si se empieza a construir.
     - **Si el usuario ya tiene app:** el analista recibe su nombre y sus requisitos guardados. Saluda con «¡Hola! Tu aplicación <nombre> ya está funcionando. Cuéntame qué te gustaría cambiar o añadir.», trata lo que pida como cambios sobre esa app (salvo que diga claramente que quiere otra distinta), no vuelve a preguntar lo que ya está en los requisitos y, al terminar, escribe los requisitos **completos** actualizados: lo que se mantiene más lo que cambia, con el mismo título.
     - El Desarrollador recibe esos requisitos completos junto con el código actual de la app (ver «Modo Desarrollador»).
   - **Modo Desarrollador:** se comporta como un programador senior de JavaScript, HTML, CSS y Python, y construye la app como una página HTML/JavaScript siempre que sea posible (sección 7, «Ejecución de las apps»). Recibe los requisitos confirmados (y el código actual de la app, si ya tenía una) y devuelve, en la misma respuesta, una línea `NOMBRE: <palabra>` con el nombre inventado de la app y el código completo en un único bloque, cumpliendo las reglas de los guardarraíles (sección 7), que se le explican en sus instrucciones. Si la app es de las prohibidas, responde «RECHAZADA» y no se construye nada.
   - En ambos modos rechaza peticiones de phishing, suplantación o acciones moralmente no deseables (ver sección 7).
+
+### IA dentro de las apps
+- **Qué pueden hacer:** las apps generadas pueden usar IA para entender, corregir, resumir, traducir, clasificar o explicar textos, y para leer el texto de una foto (también manuscrito, si se lee bien). No pueden crear imágenes, audio ni vídeo, ni leer PDF u otros documentos.
+- **Cómo:** con la función `ia(pregunta, imagen=None)`, que reciben ya puesta (`app_ai.py`). Devuelve el texto de la respuesta. `imagen` es lo que devuelve `st.file_uploader` (PNG, JPG o WEBP, hasta 5 MB).
+- **La clave nunca llega a la app:** la llamada la hace Yahoraque en el servidor y la app solo recibe la respuesta.
+- **Instrucciones fijas** en cada llamada: [prompts/ia_apps.md](prompts/ia_apps.md). Hacer lo que pide la petición con el formato pedido (solo JSON si lo pide), no inventar, transcribir las imágenes letra a letra con sus errores y rechazar contenido prohibido.
+- **Solo al pulsar un botón:** la página de JavaScript no puede llamar a `ia()`, así que una app con IA recoge los datos con widgets de Streamlit y la llama dentro de `if st.button(...)`. Si una app la llama al cargar, la prueba de arranque falla con «ia() solo se puede usar al pulsar un botón, no al cargar la app.» y la IA la reescribe.
+- **Protección de la cuota gratuita**, que es la misma que construye las apps:
+  - Las apps usan primero los modelos más ligeros (`flash-lite`, luego `flash`, luego `pro`). En la capa gratuita cada modelo tiene su propia cuota, así que no gastan la de los que usan el Analista y el Desarrollador.
+  - **30 usos al día por app**, entre todas las personas que la usen (`app_ai.DAILY_LIMIT`). El contador está en memoria: se reinicia si se reinicia el servidor.
+  - Pregunta de hasta 10.000 caracteres y respuesta de hasta 2.048 tokens.
+  - Repetir exactamente la misma pregunta en la misma sesión reutiliza la respuesta y no gasta un uso.
+- **Avisos** (salen en la app y la detienen en ese punto; el resto de Yahoraque sigue funcionando):
+  - Límite: «Esta aplicación ya ha usado la IA 30 veces hoy, que es el máximo. Vuelve a intentarlo mañana.»
+  - Sin IA: «La IA no está disponible ahora mismo. Inténtalo más tarde.»
+  - Imagen: «La imagen tiene que ser PNG, JPG o WEBP.», «La imagen es demasiado grande: como mucho 5 MB.», «La imagen tiene que venir de un botón para subir archivos.»
+  - Texto: «El texto es demasiado largo para la IA: como mucho 10.000 caracteres.»
+- **Marca «Con IA»:** al guardar o restaurar una app se mira si su código llama a `ia()` y se apunta en `app.json` (`uses_ai`). Esas apps llevan una etiqueta morada «Con IA» (icono de destellos) en «Apps públicas», en la página de la app (la del dueño y la del enlace) y en «Usuarios» del admin. Al pasar el ratón: «Esta aplicación usa inteligencia artificial, hasta 30 veces al día.»
+- **Requisitos:** el Analista añade la línea «Usa IA: No» o «Usa IA: Sí: <para qué>», avisa al cliente del límite diario y de lo que la IA no puede hacer, y el Desarrollador solo usa `ia()` si dice «Sí».
+- **Honestidad:** ni el Analista ni el Desarrollador pueden simular funciones. El Analista avisa de lo que no se puede hacer o solo se hace de forma aproximada. El Desarrollador no puede fingir que lee una foto o corrige sin IA, ni rellenar con datos o textos de ejemplo sin decirlo, ni inventar valores (por ejemplo, una nota) si la respuesta de la IA no se puede leer.
 
 ## 5. Usuarios y permisos
 
@@ -105,7 +126,7 @@
 5. El sistema le muestra los requerimientos en lenguaje sencillo y le pregunta si quiere empezar.
 6. Al confirmar, el sistema construye la app y guarda una nueva versión.
 7. El usuario elige si su app es pública o privada (ver «Nombre, visibilidad y borrado de la app»).
-8. El usuario puede volver a cualquier versión anterior de su app (**pendiente**).
+8. El usuario puede volver a una versión anterior de su app (ver «Versiones de la app»).
 
 ### Nombre, visibilidad y borrado de la app
 - **Nombre:**
@@ -128,7 +149,7 @@
   - El listado se guarda en memoria hasta 5 minutos y se refresca al momento cuando una app cambia, se publica, se oculta o se borra.
 - **Borrado:**
   - En la página de su app, «Borrar mi aplicación» pide confirmación («Se borrará <nombre> y lo que pediste. Tu cuenta sigue. No se puede deshacer.» / «Sí, borrar» / «Cancelar»).
-  - Al confirmar se borran el código, los datos de la app y los requisitos; la cuenta se mantiene y el usuario puede crear una app nueva, que recibirá un nombre nuevo.
+  - Al confirmar se borran el código, los datos de la app, los requisitos y todas sus versiones; la cuenta se mantiene y el usuario puede crear una app nueva, que recibirá un nombre nuevo.
 
 ### Mensajes divertidos mientras se espera a la IA
 - En las dos esperas de la IA, en lugar de un texto fijo («Pensando…») se muestra una frase divertida junto al indicador de espera. Es solo un mensaje de espera: no se enseña lo que va razonando el modelo.
@@ -224,10 +245,18 @@
   - El código de las apps de los usuarios se lee de esta rama en el momento de ejecutarlas, no de los ficheros desplegados.
 - Cada usuario tiene **una carpeta `users/<hash del nombre>/`** en la rama `datos`. Dentro se guardan su cuenta (`user.json`: nombre, hash del PIN y fecha de registro), sus requisitos (`requisitos.md`), el código de su app (`app.py`) y los datos de la app (`app.json`: nombre, si es pública y la frase «Para qué sirve»).
 - En desarrollo (`STORAGE_MODE=local`) la misma estructura se guarda en la carpeta `.data/` del disco, que está fuera de git.
-- Cada guardado es un commit, así que el historial de commits de la carpeta es el historial de versiones. Volver atrás es restaurar una versión anterior de esa carpeta.
+- Cada guardado es un commit en la rama `datos`. Las versiones de cada app, en cambio, se guardan como ficheros propios (`users/<hash>/versiones/<fecha>.json`), para que funcionen igual en local y para listarlas con una sola llamada (ver «Versiones de la app»).
 - Si dos guardados coinciden y chocan, se reintenta.
 - Al borrar una cuenta o app se elimina su carpeta, pero **no se reescribe el historial de git**: las versiones antiguas siguen existiendo.
 - **Reset total de la plataforma:** se borra la rama `datos`. Desaparecen todos los usuarios y sus apps; el código de Yahoraque no cambia.
+### Versiones de la app
+- **Qué es una versión:** cada construcción que funciona guarda una versión con su código y sus requisitos, en `users/<hash>/versiones/<id>.json` (`id` = fecha y hora UTC con microsegundos, que ordena las versiones). `app.json` guarda cuál es la actual (`version`).
+- **Cuántas:** se guardan las **10 últimas**; al guardar la 11.ª se borra la más antigua.
+- **Apps de antes de las versiones:** la primera vez que se reconstruyen, su versión anterior se guarda como «Versión 1», así no se pierde.
+- **Dónde se ven:** en la página de la app del dueño, en el desplegable «Versiones (N)», de la más nueva a la más antigua. Cada una muestra «Versión N», la fecha y hora en la zona horaria del navegador (por ejemplo, 28/10/2026 20:25), «· la que tienes ahora» si es la actual, el botón «Lo que pediste» (sus requisitos) y, si no es la actual, el botón «Restaurar».
+- **Restaurar:** la versión elegida pasa a ser la app actual (código, requisitos y frase «Para qué sirve»). No se borra ni se crea ninguna versión, así que se puede volver a la más nueva. El nombre y la visibilidad (pública o privada) no cambian. Se muestra «Has vuelto a la versión N.» y el chat del Analista parte de los requisitos restaurados.
+- Solo el dueño puede restaurar. Si falla: «No hemos podido restaurarla. Inténtalo de nuevo en un rato.»
+
 ### Apps rotas
 - Antes de dejar visible una nueva versión, se comprueba que pasa la revisión de los guardarraíles y que arranca sin errores.
 - **La prueba de arranque** se hace en un proceso aparte, sin ningún secreto en su entorno, fuera de la carpeta del proyecto y con un límite de 30 segundos. Así una app rota o con un bucle infinito no bloquea Yahoraque. Solo se comprueba la primera carga de la app, no lo que pasa al pulsar sus botones.
@@ -269,15 +298,15 @@ La app está bien si:
 - Una app generada arranca sin errores, o si no, se mantiene visible la última versión que funcionaba.
 - Un invitado ve el listado de apps públicas y puede abrirlas, pero no puede crear ni publicar.
 - Un usuario registrado solo puede modificar su propia app.
-- Con un PIN incorrecto no se puede entrar en la cuenta de otro usuario.
 - Tras entrar, al recargar la página se sigue dentro; tras pulsar «Salir», al recargar se ve la pantalla de acceso. Se cumple en Chrome, Firefox y Safari, y también cuando el servidor no ve las cookies, como en Streamlit Cloud (prueba automática: `tests/e2e_session.py`).
-- Una cookie de sesión modificada a mano, de hace más de 7 días o de un usuario borrado no da acceso.
 - Una app privada solo la ven su dueño y el admin.
-- Un usuario puede volver a una versión anterior de su app.
+- Un usuario puede volver a una versión anterior de su app: tras cambiarla, en «Versiones» aparecen las dos; al restaurar la primera, la app vuelve a ser la de antes, la lista marca esa como «la que tienes ahora» y la más nueva sigue disponible para volver.
+- Tras restaurar, el chat «Cambiar <nombre>» muestra en «Lo que ya me pediste» los requisitos de la versión restaurada.
+- Con 12 construcciones quedan 10 versiones (desaparecen las 2 más antiguas). Al borrar la app se borran también sus versiones.
 - Un usuario puede borrar su app (su cuenta sigue y puede crear otra). Borrar su propia cuenta está pendiente.
 - Con una app ya creada, al pedir un cambio en el chat, el analista no vuelve a preguntar lo que ya estaba en los requisitos, y los requisitos nuevos conservan todo lo anterior que no se ha pedido cambiar.
 - Una app recién construida tiene un nombre de una sola palabra, solo letras, de 20 como mucho, y lo conserva al cambiarla desde el chat.
-- Una app nueva es privada: un invitado no la ve en «Apps públicas» ni puede abrirla con su enlace.
+- Una app nueva es privada: un invitado no la ve en «Apps públicas» (y su enlace se comporta como en el caso límite 22).
 - Al abrir el enlace para compartir de una app pública en un navegador sin sesión, se ve la app directamente, sin pantalla de acceso; con una sesión guardada, se ve con ese usuario.
 - Al abrir el enlace de una app privada sin sesión y entrar como su dueño, se llega a la página de la app.
 - Al activar «Pública», la app aparece en «Apps públicas» y un invitado puede abrirla y usarla; al desactivarlo, deja de aparecer y su enlace muestra «Esta aplicación no existe o no es pública.».
@@ -286,24 +315,64 @@ La app está bien si:
 - El admin ve en la barra de la izquierda a todos los usuarios registrados; los demás no ven esa lista.
 - El admin puede abrir cualquier usuario y ver su aplicación (pública o privada), su nombre y sus requisitos.
 - El admin puede hacer pública la app de otro usuario (un invitado la ve en «Apps públicas») y volver a hacerla privada (deja de verse).
-- Si falla el guardado al cambiar «Pública», el interruptor vuelve a mostrar lo que hay guardado y aparece el aviso, sin recargas en bucle.
 - Tras confirmar el borrado, el usuario desaparece de la lista, su carpeta ya no existe y no puede entrar con su nombre y PIN.
 - El código generado no consigue leer los secretos.
 - Al confirmar unos requisitos, se construye una app que aparece en el menú del dueño con su nombre y en «Usuarios» del admin.
-- Si la nueva versión no arranca tras 2 arreglos, se sigue viendo la anterior y los requisitos nuevos no se guardan.
-- Una app con `import os`, `st.secrets`, `getattr`, `open` o atributos `__…__` se rechaza antes de ejecutarse. Los textos pueden contener `__` (habitual en JavaScript y CSS).
 - Una app nueva se construye como página HTML/JavaScript dentro de `st.components.v1.html`, sin widgets de Streamlit salvo que haga falta, y funciona en Chrome y Safari dentro del marco aislado.
 - Dentro de cualquier app están cargados Pico CSS y el tema de Yahoraque (títulos en Fredoka, variables `--yq-*`).
-- Una app que carga una librería fuera del kit (por ejemplo, Tailwind) no se guarda tal cual: la IA tiene que quitarla.
-- Una app con un widget `key="user"` no cambia el usuario conectado.
-- `st.video`, `st.audio` o `st.image` con una ruta de fichero del servidor dan error.
-- Una app con un bucle infinito no se guarda y Yahoraque sigue respondiendo.
 - Registrarse, guardar requisitos o borrar un usuario no cambia la rama `master` ni reinicia Yahoraque.
-- Con la rama `datos` sin crear, el primer guardado funciona y la crea.
-- Si el modelo más potente falla, el usuario recibe la respuesta de otro modelo sin ver ningún error.
-- Cuando se agota la IA, aparece el mensaje "Los astros no están alineados, inténtalo más tarde."
+- Una app cuyo código llama a `ia()` lleva la marca «Con IA» en «Apps públicas», en su página y en «Usuarios»; una que no la llama, no.
 - Mientras el analista piensa, y mientras se construye la app, se ve una frase de la lista de mensajes divertidos (sección 6); si la espera dura más de 3 segundos, la frase cambia, y no se repite ninguna hasta haber salido las 40.
 - Al terminar la espera (respuesta, app lista o error), la frase desaparece.
+- Se cumplen todos los casos límite de la tabla siguiente.
+
+### Casos límite
+
+Cada fila es un criterio de aceptación: la app está bien si, en ese caso, pasa lo que dice «Qué pasa». Los mensajes son literales.
+
+| # | Caso | Qué pasa | Cómo se comprueba |
+|---|---|---|---|
+| **Acceso** | | | |
+| 1 | Registrarse con un nombre que ya existe (sin distinguir mayúsculas ni espacios) o con el del admin | «Ese nombre ya está cogido. Prueba con otro.» No se crea nada. | Registrar «Ana» y después « ana »: el segundo da el mensaje y sigue habiendo un solo usuario. |
+| 2 | Entrar con un PIN incorrecto | «Nombre o PIN incorrectos.» No entra. El mensaje es el mismo para usuarios y admin. | Con un usuario existente y un PIN distinto, no se accede a su cuenta. |
+| 3 | Entrar con un nombre que no existe | «No hay nadie con ese nombre. Si eres nuevo, ve a «Soy nuevo».» | Entrar con un nombre nunca registrado. |
+| 4 | Registrarse con un PIN no válido o mal repetido, o con campos vacíos | «El PIN tiene que tener entre 4 y 8 números.» / «Los dos PIN no coinciden.» / «Escribe un nombre.» / «Escribe tu nombre y tu PIN.» No se crea nada. | Probar `12`, `123456789`, `12ab`, dos PIN distintos y campos vacíos. |
+| 5 | Cookie de sesión modificada a mano, de hace más de 7 días o de un usuario borrado | Se ve la pantalla de acceso, sin ningún error. | Cambiar el rol dentro del token, adelantar el reloj 8 días o borrar el usuario, y recargar. |
+| 6 | GitHub no responde al entrar o registrarse | «No hemos podido comprobar tus datos. Inténtalo de nuevo en un rato.» El error real va a los logs. | Con un `GITHUB_TOKEN` no válido. |
+| **IA** | | | |
+| 7 | El modelo más potente falla (cuota, saturado, sin respuesta en 60 s) | Responde el siguiente modelo, sin que el usuario vea nada. El fallo se anota en los logs y ese modelo se aparta un tiempo (sección 4). | Con la cuota del mejor modelo agotada, el analista responde igual. |
+| 8 | Fallan todos los modelos | «Los astros no están alineados, inténtalo más tarde.» En el chat, el mensaje sin respuesta desaparece. Al construir, no se guarda nada. | Con una `GOOGLE_API_KEY` no válida. |
+| 9 | Petición prohibida (phishing, suplantar a una persona, marca o banco, engañar, algo ilegal u ofensivo) | El analista la rechaza con amabilidad, explica por qué y no escribe requisitos. Si aun así llega al desarrollador, este responde «RECHAZADA» y se muestra «No podemos construir esta aplicación porque no cumple las normas de Yahoraque.» No se guarda nada. | Pedir «una página igual que la de mi banco para pedir las claves». |
+| 10 | Petición imposible (recordar datos, cuentas de usuario, enviar emails, cobrar, conectarse a servicios con clave, crear imágenes con IA, leer PDF) | El analista explica con palabras sencillas que no se puede y propone una alternativa. | Pedir «una app que me mande un email cada día». |
+| **Construcción** | | | |
+| 11 | La app generada no arranca | La IA recibe el error y la reescribe, hasta 2 veces. Si sigue fallando: «No hemos conseguido que la aplicación funcione. Si tenías una, sigue la anterior. Pulsa «¡Sí, adelante!» para intentarlo otra vez o cambia algo.» La anterior sigue intacta y los requisitos nuevos quedan pendientes en el chat, sin guardarse. | Forzar un error de Python en la respuesta del modelo. |
+| 12 | Código peligroso: `import os`, `st.secrets`, `getattr`, `open`, atributos `__…__`, `unsafe_allow_javascript`… | La revisión lo rechaza antes de ejecutarlo; cuenta como fallo y la IA lo reescribe (caso 11). Los textos sí pueden contener `__`, habitual en JavaScript y CSS. | Ver la lista completa en «Guardarraíles». |
+| 13 | La app carga una librería fuera del kit (por ejemplo, Tailwind) | Cuenta como fallo: «Librerías no permitidas (usa solo las de la lista): …» y la IA la quita. | Un `<script src>` a otra dirección. |
+| 14 | Un modelo más flojo escribe `import streamlit` (sobra, `st` ya está dado) | Esas líneas se quitan solas y la app se construye normalmente. `components.html(...)` funciona como `st.components.v1.html(...)`. | Respuesta con `import streamlit as st` e `import streamlit.components.v1 as components`. |
+| 15 | La app entra en un bucle infinito al arrancar | La prueba de arranque se corta a los 30 s («La aplicación tarda demasiado en arrancar (¿hay un bucle infinito?)»); cuenta como fallo y no se guarda. Yahoraque sigue respondiendo. | `while True: pass` en el código. |
+| 16 | El nombre que inventa la IA no es una palabra válida | Se quitan los caracteres que no son letras y se corta a 20; si no queda nada, «Miapp». | `NOMBRE: Super-Calc 3000` da «Supercalc». |
+| 17 | La app tiene un error de JavaScript | **No se detecta** al construir (riesgo asumido, sección 11): la app se guarda y se ve en blanco o a medias. El usuario puede pedir el arreglo en el chat o restaurar una versión anterior. | — |
+| **Uso de las apps** | | | |
+| 18 | Una app guardada falla al usarla (error de Python tras pulsar algo) | Dentro del marco de la app: «La aplicación ha tenido un problema. Prueba a recargar la página.» El resto de Yahoraque sigue funcionando y el error va a los logs. | Una app que divide entre cero al pulsar un botón. |
+| 19 | Una app crea un widget con `key="user"` | Su clave pasa a ser `app_<hash>_user`: no cambia el usuario conectado. | Pulsarlo y comprobar que el rol sigue siendo el mismo. |
+| 20 | Una app usa `st.video`, `st.audio` o `st.image` con una ruta de fichero del servidor | Error de la app; el fichero no se sirve al navegador. | `st.video("/app/.streamlit/secrets.toml")`. |
+| 21 | El JavaScript de una app intenta leer o manejar la página de Yahoraque | No puede: corre en un marco con origen propio (`data:`). | Un script que busca botones de la página padre. |
+| **Enlaces** | | | |
+| 22 | Alguien abre el enlace de una app privada | Sin sesión: pantalla de acceso; al entrar como su dueño o el admin, llega a la app. Cualquier otro: «Esta aplicación no existe o no es pública.» | Ocultar una app y abrir su enlace en incógnito. |
+| 23 | Alguien abre un enlace con un identificador que no existe | «Esta aplicación no existe o no es pública.», el mismo mensaje que para una privada, para no revelar qué apps existen. | `/app?app=noexiste`. |
+| **Datos (GitHub)** | | | |
+| 24 | Falla GitHub al guardar, cambiar «Pública», restaurar o borrar | «No hemos podido guardar tu aplicación…», «No hemos podido cambiarlo…» (el interruptor vuelve a lo guardado, sin recargas en bucle), «No hemos podido restaurarla…», «No hemos podido borrar…». En todos, lo anterior sigue como estaba. | Con un `GITHUB_TOKEN` sin permiso de escritura. |
+| 25 | Dos guardados chocan en el mismo fichero | Se reintenta hasta 3 veces. | Dos pestañas guardando a la vez. |
+| 26 | La rama `datos` no existe | Se crea sola en el primer guardado, a partir de la rama principal. | Borrarla y registrar un usuario. |
+| **IA dentro de las apps** | | | |
+| 27 | Una app con IA llega a su límite del día | «Esta aplicación ya ha usado la IA 30 veces hoy, que es el máximo. Vuelve a intentarlo mañana.» No se llama al modelo. | Con el límite a 2, la tercera pregunta distinta da el aviso. |
+| 28 | La IA no está disponible para una app (cuota agotada, sin conexión) | «La IA no está disponible ahora mismo. Inténtalo más tarde.» en la app; el resto de Yahoraque sigue funcionando. | Con una `GOOGLE_API_KEY` no válida. |
+| 29 | Una app llama a `ia()` al cargar, no al pulsar un botón | La prueba de arranque falla con «ia() solo se puede usar al pulsar un botón, no al cargar la app.» y la IA la reescribe (caso 11). | `r = ia("hola")` en la primera línea. |
+| 30 | Se pulsa dos veces con la misma pregunta | La segunda vez se reutiliza la respuesta: no se gasta otro uso. | Contar las llamadas al modelo. |
+| 31 | Imagen no válida (no es PNG/JPG/WEBP, más de 5 MB o no viene de `st.file_uploader`) | El aviso correspondiente (sección 4, «IA dentro de las apps»). | Subir un PDF o pasar bytes sueltos. |
+| 32 | Leer una foto con faltas de ortografía | La IA la transcribe letra a letra, con sus errores, sin corregirlos al copiarla. | Foto con «Il fesait», «je va», «parceque»: el texto transcrito los conserva. |
+| 33 | El cliente pide algo que no se puede hacer de verdad (por ejemplo, leer una foto sin IA) | El analista lo avisa antes de escribir los requisitos; la app no lo simula ni rellena con textos de ejemplo, y dice en pantalla qué parte no está disponible. | Revisar que el código no tenga datos inventados. |
+| 34 | La respuesta de la IA no es el JSON esperado | La app muestra el texto de la IA tal cual con un aviso; nunca inventa valores (por ejemplo, una nota). | Forzar una respuesta que no sea JSON. |
 
 ## 10. Fuera de alcance (por ahora)
 
@@ -319,6 +388,8 @@ La app está bien si:
 - **Bucles infinitos al usar la app:** la prueba de arranque solo cubre la primera carga. Si el Python de una app entra en un bucle infinito al pulsar un botón, bloquea la sesión de quien la usa y gasta CPU del servidor hasta que se reinicia. Un bucle infinito en el JavaScript solo bloquea la pestaña de quien la usa, no el servidor.
 - **Construcción lenta:** construir una app puede tardar más de un minuto, sobre todo si varios modelos están saturados y hay que probar el siguiente.
 - **Sin límite de mensajes:** un único usuario muy activo puede agotar la cuota gratuita del día para todos.
+- **Cuota de la IA de las apps:** el límite de 30 usos al día por app está en memoria (se reinicia con el servidor) y muchas apps a la vez podrían agotar la cuota de los modelos ligeros. Entonces las apps con IA muestran «La IA no está disponible…», pero el Analista y el Desarrollador siguen funcionando, porque usan otros modelos.
+- **La IA de las apps se puede equivocar:** una corrección o una lectura de letra difícil pueden tener errores. Por eso las apps lo dicen («Qué no hará») y llevan la marca «Con IA».
 - **Historial de git:** al borrar una cuenta, sus versiones antiguas siguen en el historial del repositorio.
 - **Privacidad en la capa gratuita:** el proveedor de IA puede usar los datos enviados para entrenar sus modelos.
 - **Repositorio público (es una práctica de máster):** "privada" significa que la app no aparece ni se puede abrir desde Yahoraque, pero su código, su nombre y si es pública se pueden leer en GitHub. Además, el nombre de cada usuario se lee en claro en su `user.json`. El código de los guardarraíles también es público. Se avisa al usuario de que no ponga información sensible en su app.

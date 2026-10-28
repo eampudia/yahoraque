@@ -4,12 +4,15 @@ Access with name + PIN, guest or admin.
 """
 
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo
 
 import streamlit as st
 
 import analyst
+import app_ai
 import apps
 import auth
 import developer
@@ -125,6 +128,7 @@ def home_page():
         st.switch_page(my_app_page)
 
     st.title(meta["name"])
+    ai_badge(meta)
     st.page_link(my_app_page, label="Cambiar mi aplicación", icon=":material/edit:")
     public_toggle(user["id"], meta)
     if meta["public"]:
@@ -132,7 +136,74 @@ def home_page():
         st.code(share_url(user["id"]), language=None)
 
     show_app(user["id"])
+    versions_section(user["id"], meta)
     delete_my_app(user["id"], meta["name"])
+
+
+def toast_after_rerun(message):
+    """st.toast right before st.rerun() is lost: show it on the next run instead."""
+    st.session_state.pending_toast = message
+
+
+def local_time(iso_date):
+    """A saved UTC date in the viewer's time zone, e.g. 28/10/2026 19:40."""
+    try:
+        zone = ZoneInfo(st.context.timezone or "UTC")
+    except Exception:
+        zone = timezone.utc
+    return datetime.fromisoformat(iso_date).astimezone(zone).strftime("%d/%m/%Y %H:%M")
+
+
+def versions_section(uid, meta):
+    """Every build of the app, newest first, with a button to go back to it."""
+    try:
+        versions = apps.load_versions(uid)
+    except Exception:
+        logging.exception("Loading versions failed")
+        st.error("No hemos podido cargar las versiones. Inténtalo de nuevo en un rato.")
+        return
+    if not versions:
+        return
+
+    with st.expander(f"Versiones ({len(versions)})", icon=":material/history:"):
+        st.caption(
+            f"Cada vez que se construye tu aplicación se guarda una versión "
+            f"(las {apps.MAX_VERSIONS} últimas). Restaurar una no borra las demás."
+        )
+        for number, version in reversed(list(enumerate(versions, start=1))):
+            is_current = version["id"] == meta.get("version")
+            label, details, action = st.columns([3, 2, 2], vertical_alignment="center")
+            label.markdown(
+                f"**Versión {number}**" + (" · la que tienes ahora" if is_current else "")
+                + f"  \n{local_time(version['created_at'])}"
+            )
+            with details.popover("Lo que pediste", icon=":material/description:"):
+                show_requirements(version["requirements"])
+            if not is_current and action.button(
+                "Restaurar", key=f"restore_{version['id']}", icon=":material/restore:"
+            ):
+                try:
+                    apps.restore(uid, version["id"])
+                except Exception:
+                    logging.exception("Restoring version failed")
+                    st.error("No hemos podido restaurarla. Inténtalo de nuevo en un rato.")
+                    return
+                # The chat must start from the restored requirements.
+                for key in ("saved_requirements", "chat", "pending_requirements"):
+                    st.session_state.pop(key, None)
+                toast_after_rerun(f"Has vuelto a la versión {number}.")
+                st.rerun()
+
+
+def ai_badge(app):
+    """Mark apps that use AI, so their users know (and know the daily limit)."""
+    if app.get("uses_ai"):
+        st.badge(
+            "Con IA",
+            icon=":material/auto_awesome:",
+            color="violet",
+            help=f"Esta aplicación usa inteligencia artificial, hasta {app_ai.DAILY_LIMIT} veces al día.",
+        )
 
 
 def share_url(uid):
@@ -196,7 +267,7 @@ def delete_my_app(uid, name):
             return
         for key in ("confirm_delete_app", "saved_requirements", "chat", "pending_requirements"):
             st.session_state.pop(key, None)
-        st.toast(f"{name} borrada.")
+        toast_after_rerun(f"{name} borrada.")
         st.rerun()
     if cancel.button("Cancelar", width="stretch"):
         del st.session_state.confirm_delete_app
@@ -216,6 +287,7 @@ def public_page():
     for app in public:
         with st.container(border=True):
             st.subheader(app["name"])
+            ai_badge(app)
             if app["description"]:
                 st.write(app["description"])
             st.page_link(view_page, label="Abrir", icon=":material/arrow_forward:", query_params={"app": app["id"]})
@@ -234,7 +306,9 @@ def app_view_page():
         st.write("Esta aplicación no existe o no es pública.")
         st.page_link(public_list_page, label="Ver las apps públicas", icon=":material/explore:")
         return
-    st.title(apps.load_meta(uid)["name"])
+    meta = apps.load_meta(uid)
+    st.title(meta["name"])
+    ai_badge(meta)
     show_app(uid)
 
 
@@ -376,6 +450,8 @@ def users_page():
     meta = app_meta(user["id"])
     st.subheader(f"Su aplicación: {meta['name']}" if meta else "Su aplicación")
     if meta:
+        ai_badge(meta)
+    if meta:
         public_toggle(user["id"], meta)
     if not show_app(user["id"]):
         st.write("Todavía no tiene aplicación.")
@@ -408,7 +484,7 @@ def users_page():
             return
         del st.session_state.selected_user
         del st.session_state.confirm_delete
-        st.toast(f"{user['name']} borrado.")
+        toast_after_rerun(f"{user['name']} borrado.")
         st.rerun()
     if cancel.button("Cancelar", width="stretch"):
         del st.session_state.confirm_delete
@@ -517,4 +593,6 @@ with st.sidebar:
         st.divider()
         users_sidebar()
 
+if message := st.session_state.pop("pending_toast", None):
+    st.toast(message)
 navigation.run()
