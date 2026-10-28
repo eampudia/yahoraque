@@ -101,7 +101,10 @@ def check(code):
     try:
         tree = ast.parse(code)
     except SyntaxError as error:
-        return f"Error de sintaxis en la línea {error.lineno}: {error.msg}"
+        line = (error.text or "").strip()
+        return f"Error de sintaxis en la línea {error.lineno}: {error.msg}" + (
+            f" (la línea es: {line[:200]})" if line else ""
+        )
 
     for node in ast.walk(tree):
         line = getattr(node, "lineno", "?")
@@ -297,7 +300,8 @@ def run(code, app_id):
         "st": app_st,
         # AI through Yahoraque, with daily limits; the key never reaches the app.
         "ia": app_ai.make_ia(app_id),
-        # Usual alias from "import streamlit.components.v1 as components".
-        "components": app_st.components.v1,
+        # Usual aliases after the stripped "import streamlit.components(.v1) as components":
+        # both components.html(...) and components.v1.html(...) work.
+        "components": SimpleNamespace(html=_html_component, v1=app_st.components.v1),
     }
     exec(compile(code, "<app>", "exec"), app_globals)

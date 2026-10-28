@@ -17,7 +17,9 @@ import llm
 import prompts
 
 FIX_ATTEMPTS = 2
-CODE_PATTERN = re.compile(r"```(?:python)?\s*\n(.*?)```", re.DOTALL)
+# Up to the LAST fence: AI apps often have ``` in their own code (to clean the
+# answers of ia()), and stopping at the first one cut the app in half.
+CODE_PATTERN = re.compile(r"```(?:python)?[ \t]*\n(.*)```", re.DOTALL)
 # `st` is already given: weaker models often import it anyway.
 STREAMLIT_IMPORT = re.compile(
     r"^[ \t]*(?:import streamlit\S*(?:[ \t]+as[ \t]+\w+)?|from streamlit\S*[ \t]+import[^\n]*)[ \t]*\n",
@@ -50,8 +52,9 @@ class BuildRejected(Exception):
 
 def extract_code(answer):
     match = CODE_PATTERN.search(answer)
-    code = (match.group(1) if match else answer).strip() + "\n"
-    return STREAMLIT_IMPORT.sub("", code)
+    # Without a code block, the whole answer is the code, minus the name line.
+    code = match.group(1) if match else NAME_PATTERN.sub("", answer, count=1)
+    return STREAMLIT_IMPORT.sub("", code.strip() + "\n")
 
 
 def extract_name(answer):
