@@ -1,3 +1,4 @@
+
 HTML_CODE = """<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -282,7 +283,7 @@ HTML_CODE = """<!DOCTYPE html>
     <!-- Encabezado -->
     <header class="main-header">
       <h1>🇫🇷 Redacpro</h1>
-      <p>Evaluador pedagógico de redacciones en francés con escala sobre 20 puntos y detección de idioma</p>
+      <p>Evaluador pedagógico de redacciones en francés con escala sobre 20 puntos y detección estricta de idioma</p>
     </header>
 
     <!-- Panel de Configuración -->
@@ -527,47 +528,70 @@ HTML_CODE = """<!DOCTYPE html>
         },
 
         detectIfFrench(rawText) {
-          const words = rawText.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").match(/[a-z]+/g) || [];
-          if (words.length < 3) return true; // Muy corto para descartar tajantemente
+          if (!rawText || !rawText.trim()) return true;
 
-          // Palabras funcionales exclusivas/muy frecuentes del francés
+          const textLower = rawText.toLowerCase();
+
+          // Palabras exclusivas o súper comunes de otros idiomas (Español e Inglés)
+          const nonFrenchExclusive = new Set([
+            'hola', 'buenos', 'buenas', 'dias', 'días', 'tardes', 'noches', 'gracias', 'por', 'favor',
+            'amigo', 'amigos', 'casa', 'playa', 'verano', 'sol', 'futbol', 'fútbol', 'esta', 'está', 'estos',
+            'estas', 'estás', 'nosotros', 'vosotros', 'ellos', 'ellas', 'usted', 'ustedes', 'donde', 'dónde',
+            'porque', 'porqué', 'cuando', 'cuándo', 'como', 'cómo', 'mucho', 'muchos', 'mucha', 'muchas',
+            'pero', 'tambien', 'también', 'siempre', 'nunca', 'ahora', 'despues', 'después', 'mañana',
+            'hello', 'world', 'thanks', 'thank', 'you', 'please', 'friend', 'friends', 'beach', 'summer',
+            'today', 'tomorrow', 'yesterday', 'about', 'because', 'where', 'when', 'what', 'which', 'there',
+            'para', 'con', 'sin', 'del', 'al', 'los', 'las', 'unos', 'unas', 'es', 'son', 'fui', 'fuimos'
+          ]);
+
           const frenchMarkers = new Set([
             'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'en', 'est', 'sont',
             'je', 'tu', 'il', 'elle', 'nous', 'vous', 'ils', 'elles', 'que', 'qui', 'dans',
             'pour', 'pas', 'plus', 'avec', 'ce', 'cette', 'ces', 'mais', 'ou', 'donc',
             'sur', 'par', 'au', 'aux', 'mon', 'ma', 'mes', 'ton', 'ta', 'tes', 'son',
             'sa', 'ses', 'ne', 'suis', 'ai', 'a', 'avons', 'avez', 'ont', 'fait',
-            'fais', 'va', 'vont', 'aller', 'avoir', 'etre', 'faire', 'comme', 'tres',
-            'hier', 'demain', 'aujourdhui', 'beaucoup', 'parce', 'quand', 'pourquoi'
+            'fais', 'va', 'vont', 'aller', 'avoir', 'etre', 'être', 'faire', 'comme', 'tres', 'très',
+            'hier', 'demain', 'aujourdhui', 'beaucoup', 'parce', 'quand', 'pourquoi',
+            'bonjour', 'salut', 'merci', 'oui', 'non', 'toujours', 'jamais', 'ici', 'aussi'
           ]);
 
-          // Palabras muy frecuentes en español o inglés que delatan otro idioma
-          const nonFrenchMarkers = new Set([
-            'el', 'los', 'las', 'unos', 'unas', 'es', 'son', 'por', 'para', 'con', 'sin',
-            'pero', 'si', 'no', 'su', 'sus', 'este', 'esta', 'estos', 'estas', 'como', 'mas',
-            'muy', 'del', 'al', 'yo', 'tu', 'nosotros', 'vosotros', 'ellos', 'ellas', 'hacer',
-            'haber', 'tener', 'estar', 'ser', 'trabajo', 'donde', 'cuando', 'porque', 'hola',
-            'amigos', 'buenos', 'dias', 'tardes', 'noches', 'playa', 'verano', 'the', 'is',
-            'are', 'was', 'were', 'and', 'in', 'to', 'of', 'for', 'with', 'on', 'at', 'by',
-            'this', 'that', 'it', 'my', 'your', 'his', 'her', 'their', 'our', 'have', 'has'
-          ]);
+          // Extraer palabras
+          const rawWords = textLower.match(/[a-zàâæçéèêëîïôœùûüÿ']+/gi) || [];
+          if (rawWords.length === 0) return true;
 
           let frCount = 0;
           let nonFrCount = 0;
+          let explicitNonFrFound = false;
 
-          words.forEach(w => {
-            if (frenchMarkers.has(w)) frCount++;
-            if (nonFrenchMarkers.has(w)) nonFrCount++;
+          const normalizedWords = rawWords.map(w => w.normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+
+          normalizedWords.forEach(w => {
+            if (nonFrenchExclusive.has(w)) {
+              explicitNonFrFound = true;
+              nonFrCount++;
+            } else if (frenchMarkers.has(w)) {
+              frCount++;
+            }
           });
 
-          // Presencia de tildes/caracteres franceses (é, è, ê, à, ç, œ)
-          const frenchCharMatches = (rawText.match(/[éèêëàâùûçœæ]/gi) || []).length;
+          // Apóstrofes y tildes exclusivas del francés
+          const hasFrenchApostrophes = /([jlcndst]|qu)'[a-zàâæçéèêëîïôœùûüÿ]/i.test(textLower);
+          const hasFrenchAccents = /[éèêëàâùûçœæ]/i.test(rawText);
 
-          if (nonFrCount > frCount && frenchCharMatches === 0 && nonFrCount >= 2) {
+          // Si hay palabras claramente no francesas y ningún marcador ni apóstrofe francés
+          if (explicitNonFrFound && !hasFrenchApostrophes && frCount === 0) {
             return false;
           }
 
-          if (frCount === 0 && nonFrCount >= 3 && frenchCharMatches === 0) {
+          if (nonFrCount > frCount && !hasFrenchApostrophes && !hasFrenchAccents) {
+            return false;
+          }
+
+          if (frCount === 0 && nonFrCount > 0 && !hasFrenchApostrophes && !hasFrenchAccents) {
+            return false;
+          }
+
+          if (nonFrCount > 0 && frCount === 0) {
             return false;
           }
 
@@ -578,7 +602,7 @@ HTML_CODE = """<!DOCTYPE html>
           const txt = this.text.trim();
           if (!txt) return;
 
-          // 1. Verificación de Idioma Francés
+          // 1. Verificación de Idioma Francés con estricta precisión
           const frenchValid = this.detectIfFrench(txt);
           this.isFrench = frenchValid;
 
@@ -803,4 +827,4 @@ HTML_CODE = """<!DOCTYPE html>
 </html>
 """
 
-st.components.v1.html(HTML_CODE, height=1100)
+st.components.v1.html(HTML_CODE, height=1150)
