@@ -1,4 +1,3 @@
-
 HTML_CODE = """<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -56,7 +55,7 @@ HTML_CODE = """<!DOCTYPE html>
 
     .main-header p {
       margin: 0.3rem 0 0 0;
-      opacity: 0.9;
+      opacity: 0.95;
       font-size: 0.95rem;
     }
 
@@ -80,6 +79,7 @@ HTML_CODE = """<!DOCTYPE html>
       font-size: 0.95rem;
       color: #1e293b;
       margin-bottom: 6px;
+      font-weight: 600;
     }
 
     input[type="text"], select, textarea, input[type="file"] {
@@ -155,6 +155,29 @@ HTML_CODE = """<!DOCTYPE html>
     .score-mid { color: var(--yq-yellow); }
     .score-low { color: #ef4444; }
 
+    .warning-banner {
+      background-color: #fef2f2;
+      border: 2px solid #fca5a5;
+      color: #991b1b;
+      padding: 1rem 1.2rem;
+      border-radius: 10px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .warning-banner h4 {
+      margin: 0 0 4px 0;
+      font-size: 1.05rem;
+    }
+
+    .warning-banner p {
+      margin: 0;
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+
     .error-tag {
       display: inline-block;
       font-size: 0.75rem;
@@ -169,6 +192,7 @@ HTML_CODE = """<!DOCTYPE html>
     .tag-gram { background: #fef3c7; color: #92400e; }
     .tag-voc { background: #e0e7ff; color: #3730a3; }
     .tag-struct { background: #dcfce7; color: #166534; }
+    .tag-lang { background: #fef2f2; color: #b91c1c; }
 
     .error-item {
       padding: 0.8rem 1rem;
@@ -182,6 +206,7 @@ HTML_CODE = """<!DOCTYPE html>
     .error-item.gram { border-left-color: #fbbf24; }
     .error-item.voc { border-left-color: #818cf8; }
     .error-item.struct { border-left-color: #34d399; }
+    .error-item.lang { border-left-color: #ef4444; }
 
     .review-box {
       background: #eff6ff;
@@ -241,6 +266,14 @@ HTML_CODE = """<!DOCTYPE html>
     .sample-btn:hover {
       background: #cbd5e1;
     }
+
+    .sample-btn-warn {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .sample-btn-warn:hover {
+      background: #fca5a5;
+    }
   </style>
 </head>
 <body>
@@ -249,14 +282,14 @@ HTML_CODE = """<!DOCTYPE html>
     <!-- Encabezado -->
     <header class="main-header">
       <h1>🇫🇷 Redacpro</h1>
-      <p>Evaluador pedagógico de redacciones en francés con escala sobre 20 puntos</p>
+      <p>Evaluador pedagógico de redacciones en francés con escala sobre 20 puntos y detección de idioma</p>
     </header>
 
     <!-- Panel de Configuración -->
     <article class="card">
       <div class="grid">
         <div>
-          <label for="level-select"><strong>Nivel MCER del alumno:</strong></label>
+          <label for="level-select">Nivel MCER del alumno:</label>
           <select id="level-select" x-model="level" x-on:change="recalculateIfEvaluated()">
             <option value="A1">A1 - Principiante (30-60 palabras)</option>
             <option value="A2">A2 - Elemental (60-120 palabras)</option>
@@ -269,8 +302,8 @@ HTML_CODE = """<!DOCTYPE html>
 
         <div>
           <label for="criteria-input">
-            <strong>Criterios o tema a evaluar:</strong>
-            <small style="color:#64748b">(opcional)</small>
+            Criterios o tema a evaluar:
+            <small style="color:#64748b; font-weight:normal;">(opcional)</small>
           </label>
           <input 
             type="text" 
@@ -290,19 +323,20 @@ HTML_CODE = """<!DOCTYPE html>
           <button type="button" class="tab-btn" :class="mode === 'image' ? 'active' : ''" @click="mode = 'image'">📸 Foto manuscrita</button>
         </div>
         <div>
-          <small style="color: #64748b;">Ejemplos:</small>
+          <small style="color: #64748b;">Probar ejemplos:</small>
           <button type="button" class="sample-btn" @click="loadSample('A1')">Nivel A1</button>
           <button type="button" class="sample-btn" @click="loadSample('B1')">Nivel B1</button>
+          <button type="button" class="sample-btn sample-btn-warn" @click="loadSample('NO_FR')">No Francés (Español)</button>
         </div>
       </div>
 
       <!-- Modo Subir Imagen -->
       <template x-if="mode === 'image'">
         <div style="margin-bottom: 1rem; background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px dashed #cbd5e1;">
-          <label for="file-upload"><strong>Adjuntar imagen de la redacción:</strong></label>
+          <label for="file-upload">Adjuntar imagen de la redacción manuscrita:</label>
           <input type="file" id="file-upload" accept="image/*" @change="handleImageUpload($event)">
           <small style="display:block; color:#64748b; margin-top:4px;">
-            ⚠️ <em>Las imágenes manuscritas se transcriben automáticamente para su revisión. Puedes ajustar el texto transcrito si alguna palabra no es del todo clara.</em>
+            ⚠️ <em>El texto manuscrito se transcribe automáticamente para su revisión. Puedes ajustar la transcripción en el recuadro si alguna palabra no es clara.</em>
           </small>
           <template x-if="imagePreview">
             <img :src="imagePreview" class="image-preview" alt="Vista previa de la redacción manuscrita">
@@ -312,7 +346,7 @@ HTML_CODE = """<!DOCTYPE html>
 
       <!-- Cuadro de Texto -->
       <div>
-        <label for="essay-text"><strong>Texto de la redacción en francés:</strong></label>
+        <label for="essay-text">Texto de la redacción en francés:</label>
         <textarea 
           id="essay-text" 
           rows="8" 
@@ -336,6 +370,18 @@ HTML_CODE = """<!DOCTYPE html>
     <!-- Resultados -->
     <template x-if="evaluated">
       <section id="results">
+        
+        <!-- Aviso si no está en francés -->
+        <template x-if="!isFrench">
+          <div class="warning-banner">
+            <span style="font-size: 1.8rem;">⚠️</span>
+            <div>
+              <h4>¡La redacción no está escrita en francés!</h4>
+              <p>El sistema ha detectado que el texto introducido está en otro idioma. De acuerdo con los criterios de evaluación, se asigna automáticamente una calificación de <strong>0 / 20</strong>.</p>
+            </div>
+          </div>
+        </template>
+
         <!-- Hero Nota -->
         <article class="card score-hero">
           <span class="level-badge" x-text="'Nivel ' + level"></span>
@@ -344,19 +390,21 @@ HTML_CODE = """<!DOCTYPE html>
           <p style="margin: 0; font-weight: 600;" x-text="scoreFeedbackTitle"></p>
         </article>
 
-        <!-- Gráfico de Competencias -->
-        <article class="card">
-          <h3 style="font-size: 1.1rem; margin-top: 0; margin-bottom: 1rem; text-align: center;">📊 Desglose por Competencias (sobre 5 pts cada una)</h3>
-          <div class="chart-container">
-            <canvas id="skillsChart"></canvas>
-          </div>
-        </article>
+        <!-- Gráfico de Competencias (Solo si es Francés) -->
+        <template x-if="isFrench">
+          <article class="card">
+            <h3 style="font-size: 1.1rem; margin-top: 0; margin-bottom: 1rem; text-align: center;">📊 Desglose por Competencias (sobre 5 pts cada una)</h3>
+            <div class="chart-container">
+              <canvas id="skillsChart"></canvas>
+            </div>
+          </article>
+        </template>
 
         <!-- Errores y Observaciones -->
         <article class="card">
           <h3 style="font-size: 1.1rem; margin-top: 0; margin-bottom: 1rem;">🔎 Análisis Detallado y Errores Detectados</h3>
           
-          <template x-if="errors.length === 0">
+          <template x-if="isFrench && errors.length === 0">
             <div style="padding: 1rem; background: #ecfdf5; color: #065f46; border-radius: 8px;">
               ✨ ¡Felicidades! No se han detectado errores graves ni faltas ortográficas evidentes. El texto muestra un excelente nivel sintáctico y gramatical.
             </div>
@@ -402,6 +450,7 @@ HTML_CODE = """<!DOCTYPE html>
         mode: 'text',
         imagePreview: null,
         evaluated: false,
+        isFrench: true,
         finalScore: 0,
         scores: { ortho: 5, gram: 5, voc: 5, struct: 5 },
         errors: [],
@@ -426,12 +475,13 @@ HTML_CODE = """<!DOCTYPE html>
         },
 
         get scoreColorClass() {
+          if (!this.isFrench || this.finalScore < 10) return 'score-low';
           if (this.finalScore >= 14) return 'score-good';
-          if (this.finalScore >= 10) return 'score-mid';
-          return 'score-low';
+          return 'score-mid';
         },
 
         get scoreFeedbackTitle() {
+          if (!this.isFrench) return '❌ Redacción no válida: el idioma utilizado no es francés';
           if (this.finalScore >= 16) return '🌟 Excelente trabajo - Nivel superado con holgura';
           if (this.finalScore >= 14) return '👍 Buen trabajo - Comprensión y redacción sólidas';
           if (this.finalScore >= 10) return '👌 Aprobado - Cumple los mínimos, requiere pulir aspectos';
@@ -443,10 +493,14 @@ HTML_CODE = """<!DOCTYPE html>
             this.level = 'A1';
             this.criteria = 'Presentación personal y rutinas';
             this.text = "Bonjour! Je m'appelle Lucas. J'ai 12 ans et je suis étudiant. J'habite a Paris avec ma famille. Le matin, je mange le petit déjeuner et je vais a l'ecole. Je aime le football et les cheval. Je suis ale au parc hier avec mon ami. Parceque il fait beau.";
-          } else {
+          } else if (lvl === 'B1') {
             this.level = 'B1';
             this.criteria = 'Uso de conectores y pasado/futuro';
             this.text = "L'année dernière, j'ai fait un voyage très intéressant en France avec mes parents. Nous sommes allé à Lyon parceque nous voulions visiter la vieille ville. Je pense que la nourriture etait très délicieuse, mais les prix étaient beaucoups trop chers. Si il fait beau le weekend prochain, nous irons a la plage. En conclusion, c'était une expéreince inoubliable.";
+          } else if (lvl === 'NO_FR') {
+            this.level = 'A2';
+            this.criteria = 'Criterios libres';
+            this.text = "Hola, esta es una redacción escrita en español sobre mis vacaciones de verano. Fui a la playa con mis amigos y lo pasamos muy bien. Comimos helado y jugamos al fútbol por las tardes.";
           }
           this.mode = 'text';
           this.recalculateIfEvaluated();
@@ -472,9 +526,80 @@ HTML_CODE = """<!DOCTYPE html>
           }
         },
 
+        detectIfFrench(rawText) {
+          const words = rawText.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").match(/[a-z]+/g) || [];
+          if (words.length < 3) return true; // Muy corto para descartar tajantemente
+
+          // Palabras funcionales exclusivas/muy frecuentes del francés
+          const frenchMarkers = new Set([
+            'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'en', 'est', 'sont',
+            'je', 'tu', 'il', 'elle', 'nous', 'vous', 'ils', 'elles', 'que', 'qui', 'dans',
+            'pour', 'pas', 'plus', 'avec', 'ce', 'cette', 'ces', 'mais', 'ou', 'donc',
+            'sur', 'par', 'au', 'aux', 'mon', 'ma', 'mes', 'ton', 'ta', 'tes', 'son',
+            'sa', 'ses', 'ne', 'suis', 'ai', 'a', 'avons', 'avez', 'ont', 'fait',
+            'fais', 'va', 'vont', 'aller', 'avoir', 'etre', 'faire', 'comme', 'tres',
+            'hier', 'demain', 'aujourdhui', 'beaucoup', 'parce', 'quand', 'pourquoi'
+          ]);
+
+          // Palabras muy frecuentes en español o inglés que delatan otro idioma
+          const nonFrenchMarkers = new Set([
+            'el', 'los', 'las', 'unos', 'unas', 'es', 'son', 'por', 'para', 'con', 'sin',
+            'pero', 'si', 'no', 'su', 'sus', 'este', 'esta', 'estos', 'estas', 'como', 'mas',
+            'muy', 'del', 'al', 'yo', 'tu', 'nosotros', 'vosotros', 'ellos', 'ellas', 'hacer',
+            'haber', 'tener', 'estar', 'ser', 'trabajo', 'donde', 'cuando', 'porque', 'hola',
+            'amigos', 'buenos', 'dias', 'tardes', 'noches', 'playa', 'verano', 'the', 'is',
+            'are', 'was', 'were', 'and', 'in', 'to', 'of', 'for', 'with', 'on', 'at', 'by',
+            'this', 'that', 'it', 'my', 'your', 'his', 'her', 'their', 'our', 'have', 'has'
+          ]);
+
+          let frCount = 0;
+          let nonFrCount = 0;
+
+          words.forEach(w => {
+            if (frenchMarkers.has(w)) frCount++;
+            if (nonFrenchMarkers.has(w)) nonFrCount++;
+          });
+
+          // Presencia de tildes/caracteres franceses (é, è, ê, à, ç, œ)
+          const frenchCharMatches = (rawText.match(/[éèêëàâùûçœæ]/gi) || []).length;
+
+          if (nonFrCount > frCount && frenchCharMatches === 0 && nonFrCount >= 2) {
+            return false;
+          }
+
+          if (frCount === 0 && nonFrCount >= 3 && frenchCharMatches === 0) {
+            return false;
+          }
+
+          return true;
+        },
+
         evaluateText() {
-          const txt = this.text;
-          if (!txt.trim()) return;
+          const txt = this.text.trim();
+          if (!txt) return;
+
+          // 1. Verificación de Idioma Francés
+          const frenchValid = this.detectIfFrench(txt);
+          this.isFrench = frenchValid;
+
+          if (!frenchValid) {
+            this.finalScore = 0;
+            this.scores = { ortho: 0, gram: 0, voc: 0, struct: 0 };
+            this.errors = [{
+              type: 'lang',
+              categoryLabel: 'Idioma no válido',
+              title: 'La redacción no está escrita en francés',
+              found: 'Texto en español u otro idioma',
+              suggestion: 'Redactar el texto íntegramente en francés',
+              explanation: 'Se ha asignado automáticamente un 0/20 porque la redacción debe presentarse en idioma francés.'
+            }];
+            this.reviewPoints = [
+              'Asegurarse de redactar el texto en idioma francés para poder evaluar el vocabulario y la gramática.',
+              'Revisar las consignas antes de entregar el ejercicio.'
+            ];
+            this.evaluated = true;
+            return;
+          }
 
           let detectedErrors = [];
           let review = new Set();
@@ -484,7 +609,7 @@ HTML_CODE = """<!DOCTYPE html>
           let sVoc = 5.0;
           let sStruct = 5.0;
 
-          // 1. Reglas Ortográficas y de Acentuación
+          // 2. Reglas Ortográficas y de Acentuación
           const orthoRules = [
             { pattern: /\ba\s+(Paris|Lyon|Marseille|l'école|la plage|la maison|la bibliothèque)\b/gi, found: "a", suggestion: "à", title: "Falta de acento en preposición 'à'", exp: "Se escribe 'à' con acento grave cuando actúa como preposición de lugar.", type: "ortho" },
             { pattern: /\b(ecole|ecoles)\b/gi, found: "ecole", suggestion: "école", title: "Acento faltante en 'école'", exp: "En francés, la palabra 'école' lleva tilde aguda en la 'é'.", type: "ortho" },
@@ -511,7 +636,7 @@ HTML_CODE = """<!DOCTYPE html>
             }
           });
 
-          // 2. Reglas Gramaticales y Élisión
+          // 3. Reglas Gramaticales y Élisión
           const gramRules = [
             { pattern: /\b(je|le|la|de|ne|que|se|ce)\s+[aeiouhàâéèêëîïôùû]/gi, found: "Je/Le/La/Que + vocal", suggestion: "Élisión con apóstrofe (J', L', D', N', Q', S', C')", title: "Falta de élisión (Apóstrofe)", exp: "En francés, monosílabos como 'je', 'que', 'de', 'le' se eliden antes de vocal o 'h' muda (ej: J'aime, L'école).", type: "gram" },
             { pattern: /\bsi\s+il\b/gi, found: "si il", suggestion: "s'il", title: "Élisión obligatoria 's'il'", exp: "'Si' se elide obligatoriamente ante el pronombre 'il' o 'ils'.", type: "gram" },
@@ -536,7 +661,7 @@ HTML_CODE = """<!DOCTYPE html>
             }
           });
 
-          // 3. Evaluación de Vocabulario y Variedad
+          // 4. Riqueza Léxica y Vocabulario
           const words = txt.toLowerCase().match(/[a-zàâæçéèêëîïôœùûüÿ]+/g) || [];
           const uniqueWords = new Set(words);
           const lexicalRichness = words.length > 0 ? (uniqueWords.size / words.length) : 0;
@@ -549,13 +674,12 @@ HTML_CODE = """<!DOCTYPE html>
               found: 'Variedad de léxico baja',
               suggestion: 'Utilizar sinónimos y conectores variados',
               explanation: 'El texto repite varias palabras básicas. Intenta enriquecer el vocabulario.',
-              type: 'voc'
             });
             sVoc -= 1.0;
             review.add("Enriquecer el vocabulario utilizado evitando repetir las mismas palabras.");
           }
 
-          // 4. Estructura, Longitud y Criterios por Nivel
+          // 5. Estructura, Longitud y Criterios por Nivel
           const minWords = { 'A1': 30, 'A2': 60, 'B1': 120, 'B2': 200, 'C1': 300, 'C2': 350 };
           const target = minWords[this.level] || 50;
 
@@ -568,8 +692,7 @@ HTML_CODE = """<!DOCTYPE html>
               title: 'Longitud inferior al nivel seleccionado',
               found: `${this.wordCount} palabras`,
               suggestion: `Mínimo de ${target} palabras para nivel ${this.level}`,
-              explanation: `Para consolidar el nivel ${this.level}, se recomienda desarrollar más las ideas.`,
-              type: 'struct'
+              explanation: `Para consolidar el nivel ${this.level}, se recomienda desarrollar más las ideas.`
             });
             review.add(`Desarrollar más los argumentos para alcanzar la extensión mínima del nivel ${this.level}.`);
           }
@@ -585,8 +708,7 @@ HTML_CODE = """<!DOCTYPE html>
                 title: 'Ausencia de articuladores lógicos complejos',
                 found: 'Pocos conectores',
                 suggestion: 'Usar conectores como: cependant, de plus, en effet, par conséquent',
-                explanation: `En nivel ${this.level} es fundamental articular el texto con conectores variados.`,
-                type: 'struct'
+                explanation: `En nivel ${this.level} es fundamental articular el texto con conectores variados.`
               });
               review.add("Incorporar conectores lógicos de nivel intermedio/avanzado (cependant, par conséquent, de plus).");
             }
@@ -611,7 +733,7 @@ HTML_CODE = """<!DOCTYPE html>
             });
           }
 
-          // Ajustar límites de puntuación
+          // Ajustar límites de puntuación sobre 5 por bloque
           this.scores.ortho = Math.max(1, Math.min(5, Math.round(sOrtho * 10) / 10));
           this.scores.gram = Math.max(1, Math.min(5, Math.round(sGram * 10) / 10));
           this.scores.voc = Math.max(1, Math.min(5, Math.round(sVoc * 10) / 10));
@@ -650,7 +772,7 @@ HTML_CODE = """<!DOCTYPE html>
           this.chartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-              labels: ['Ortografía / Accents', 'Gramática', 'Vocabulario', 'Estructura / Nivel'],
+              labels: ['Ortografía / Tildes', 'Gramática', 'Vocabulario', 'Estructura / Nivel'],
               datasets: [{
                 label: 'Puntuación (máx 5)',
                 data: [this.scores.ortho, this.scores.gram, this.scores.voc, this.scores.struct],
@@ -681,4 +803,4 @@ HTML_CODE = """<!DOCTYPE html>
 </html>
 """
 
-st.components.v1.html(HTML_CODE, height=1000)
+st.components.v1.html(HTML_CODE, height=1100)
