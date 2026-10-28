@@ -1,10 +1,10 @@
 # yahoraque
 
-<!-- TODO: one or two lines on what the app does and who it's for -->
+Yahoraque lets teachers with no programming knowledge create, by chatting with an AI, small web apps for their day to day (e.g. a language teacher's essay corrector that reads handwritten photos), and share them.
 
 ## Stack
 - Language: Python
-- Production runtime: Streamlit (`streamlit run init.py`)
+- Production runtime: Streamlit (`streamlit run app.py`). Streamlit Cloud was deployed with `init.py`, which only runs `app.py`: keep both.
 - Local development and testing: Docker only
 
 ## Rules
