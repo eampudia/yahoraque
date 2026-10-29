@@ -1,6 +1,6 @@
 {
   "name": "Redacpro",
-  "public": false,
+  "public": true,
   "description": "Permite a profesores evaluar redacciones en franc\u00e9s seg\u00fan el nivel del alumno, obteniendo una nota sobre 20 y un an\u00e1lisis de errores. Si la redacci\u00f3n no est\u00e1 escrita en franc\u00e9s, asigna autom\u00e1ticamente un cero.",
   "version": "20261029T161017115379Z",
   "uses_ai": true
