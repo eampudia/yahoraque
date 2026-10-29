@@ -8,4 +8,5 @@ Qué podrá hacer el usuario:
 - Ver la nota final calculada entre 0 y 20 según el nivel seleccionado.
 - Obtener un resumen de los errores encontrados y los puntos que el alumno debe repasar.
 Cómo se verá: Una página limpia con un panel superior para el nivel y los criterios, un recuadro central para la redacción o la foto, y un área de resultados clara con la nota destacada y la lista de observaciones.
-Qué no hará: No guardará el historial de notas ni las redacciones de los alumnos al cerrar la pantalla, ni garantizará una detección 100% exacta si la letra manuscrita es difícil de leer.
+Usa IA: Sí: leer el texto o la foto de la redacción, evaluar su gramática, corregir errores y calificarla.
+Qué no hará: No recordará los datos al cerrar la aplicación, no garantiza una lectura 100% exacta de letra manuscrita difícil y tiene un límite de 30 usos de IA al día.
