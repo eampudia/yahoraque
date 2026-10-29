@@ -28,3 +28,4 @@ Yahoraque lets teachers with no programming knowledge create, by chatting with a
 ### Plus
 - If you do something right and I praise you, please add it to this file, (before asking me)
 - When updating `especificacion.md`: turn ideas into concrete, testable rules, keep the sections consistent (no duplicates, add acceptance criteria), and point out ambiguous wording instead of guessing silently. 
+- When production fails, reproduce it locally under the same conditions (same model, same input) before blaming the AI or the quota: the cause may be our code (e.g. the ``` extraction bug). Document the failure and the fix as an edge case in `especificacion.md` and in "Prueba y mejora" of the README.
