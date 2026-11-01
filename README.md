@@ -7,7 +7,8 @@
 
 ## Pitch
 
-Un docente necesita cada semana pequeñas herramientas que nadie le hace (hacer grupos al azar, un juego para repasar o, si es profesor de idiomas, corregir decenas de redacciones), y ni sabe programar ni su centro tiene presupuesto para encargarlas. Con Yahoraque lo describe hablando con un analista y en uno o dos minutos tiene su aplicación funcionando, con nombre propio, versiones y un enlace para compartirla con alumnos y compañeros. La IA hace tres trabajos: convierte una idea vaga en requisitos claros, escribe y prueba la aplicación, y dentro de ella puede leer la foto de una redacción manuscrita y proponer una nota con los errores explicados. Probarla como profesor fue lo que más me enseñó: mi corrector de francés parecía funcionar, pero al subir una foto corregía una frase inventada; ahora la IA lee la foto, detecta si está en francés y encontró los 7 errores de una redacción de prueba. El siguiente paso es probarla con los profesores de un centro y que las aplicaciones puedan guardar datos, como las notas de un trimestre.
+Un docente necesita cada semana pequeñas herramientas que nadie le hace (hacer grupos al azar, un juego para repasar o, si es profesor de idiomas, corregir decenas de redacciones), y ni sabe programar ni su centro tiene presupuesto para encargarlas. Con Yahoraque lo describe hablando con un analista y en uno o dos minutos tiene su aplicación funcionando, con nombre propio, versiones y un enlace para compartirla con alumnos y compañeros. La IA hace tres trabajos: convierte una idea vaga en requisitos claros, escribe y prueba la aplicación, y dentro de ella puede leer la foto de una redacción manuscrita y proponer una nota con los errores explicados. 
+Probarla como profesor fue lo que más me enseñó: mi corrector de francés parecía funcionar, pero al subir una foto corregía una frase inventada; ahora la IA lee la foto, detecta si está en francés y encontró los 7 errores de una redacción de prueba. El siguiente paso es probarla con los profesores de un centro y que las aplicaciones puedan guardar datos, como las notas de un trimestre.
 
 ## El problema
 
@@ -96,9 +97,9 @@ docker compose --profile test run --rm e2e python e2e_session.py
 
 ### La aplicación funcionando
 
-**Javijator, abierta por un invitado.** Una app pública generada por la IA en HTML y JavaScript, con el estilo de Yahoraque (títulos en Fredoka, colores del logo). Quien la abre no tiene cuenta: entra como invitado.
+**Redacpro, el corrector de redacciones, abierto por un invitado.** Una app pública generada por la IA que usa IA dentro («Con IA»). Evalúa una redacción de francés de nivel A2 con faltas: le pone 12/20 con la nota por apartados, explica cada error (por ejemplo, «je va» → «je suis allé(e)») y propone puntos de repaso. Quien la abre no tiene cuenta: entra como invitado.
 
-![Javijator abierta por un invitado](assets/APP%20javijator.png)
+![Redacpro corrigiendo una redacción de francés](assets/APP%20Redacpro.png)
 
 **Apps públicas, vistas por el admin.** Cada app tiene el nombre que le inventó la IA y la frase «Para qué sirve» de sus requisitos. En esta captura, de una versión anterior, la lista de usuarios aún estaba en la barra lateral (el primero sale con su hash porque se registró antes de que se guardaran los nombres); ahora está en la página «Usuarios», con su registro, su último acceso y su app.
 
