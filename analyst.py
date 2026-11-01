@@ -53,7 +53,7 @@ def reply(messages, current_app=None):
         system_prompt += prompts.fill(
             CURRENT_APP_PROMPT, NOMBRE=current_app["name"], REQUISITOS=current_app["requirements"]
         )
-    answer = llm.generate(system_prompt, messages)
+    answer = llm.generate(system_prompt, messages, role="analista")
     match = REQUIREMENTS_PATTERN.search(answer)
     if not match:
         return answer.strip(), None

@@ -96,7 +96,7 @@ def build(requirements, previous_code=None, name=None):
     messages = [{"role": "user", "content": request}]
 
     for attempt in range(1 + FIX_ATTEMPTS):
-        answer = llm.generate(SYSTEM_PROMPT, messages)
+        answer = llm.generate(SYSTEM_PROMPT, messages, role="desarrollador")
         if answer.strip() == "RECHAZADA":
             raise BuildRejected()
         code = extract_code(answer)

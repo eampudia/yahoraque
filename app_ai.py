@@ -9,12 +9,12 @@ same question in a session reuses the answer instead of spending a call.
 
 import hashlib
 import logging
-from datetime import datetime, timezone
 
 import streamlit as st
 
 import llm
 import prompts
+import usage
 
 DAILY_LIMIT = 30
 MAX_TEXT_LENGTH = 10_000
@@ -30,10 +30,9 @@ class IAError(Exception):
     """A problem with ia() that the viewer should read (limit, unavailable…)."""
 
 
-@st.cache_resource
-def _calls_today():
-    # Shared by all sessions: (app id, UTC date) -> calls. Resets if the server restarts.
-    return {}
+def remaining_today(app_id):
+    """AI uses the app has left today (counted in usage.py, so they survive restarts)."""
+    return max(DAILY_LIMIT - usage.app_calls(app_id), 0)
 
 
 def _image(imagen):
@@ -67,9 +66,7 @@ def make_ia(app_id):
         if key in answers:
             return answers[key]
 
-        calls = _calls_today()
-        today = (app_id, datetime.now(timezone.utc).date().isoformat())
-        if calls.get(today, 0) >= DAILY_LIMIT:
+        if not remaining_today(app_id):
             raise IAError(
                 f"Esta aplicación ya ha usado la IA {DAILY_LIMIT} veces hoy, que es el máximo. "
                 "Vuelve a intentarlo mañana."
@@ -79,6 +76,7 @@ def make_ia(app_id):
                 answer = llm.generate(
                     SYSTEM_PROMPT,
                     [{"role": "user", "content": pregunta}],
+                    role="apps",
                     image=image,
                     light=True,
                     max_output_tokens=MAX_OUTPUT_TOKENS,
@@ -86,8 +84,8 @@ def make_ia(app_id):
         except llm.AIUnavailable as error:
             logging.warning("App %s: AI unavailable", app_id)
             raise IAError("La IA no está disponible ahora mismo. Inténtalo más tarde.") from error
-        calls[today] = calls.get(today, 0) + 1
-        logging.info("App %s used the AI (%s today)", app_id, calls[today])
+        usage.count_app_call(app_id)
+        logging.info("App %s used the AI (%s left today)", app_id, remaining_today(app_id))
         answers[key] = answer
         return answer
 

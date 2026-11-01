@@ -21,7 +21,7 @@ Un docente (de primaria, secundaria, FP o academia) necesita a diario pequeñas 
 4. **La usas.** Tu app aparece en el menú con su nombre.
 5. **Con IA, si hace falta.** Tu app también puede usar IA: corregir o resumir textos, traducir o leer una foto (por ejemplo, una redacción manuscrita), con un límite de 30 usos al día. Esas apps llevan la marca «Con IA».
 6. **La compartes o la cambias.** La puedes hacer pública: aparece en «Apps públicas» y cualquiera la abre con un enlace, sin cuenta. Puedes pedir cambios en el chat (el analista ya conoce tu app), volver a cualquiera de sus 10 últimas versiones, borrarla y empezar otra, o borrar tu cuenta.
-7. **El admin** ve a todos los usuarios en la barra lateral, abre sus apps, las publica u oculta y puede borrar usuarios.
+7. **El admin** ve a todos los usuarios en la barra lateral, abre sus apps, las publica u oculta y puede borrar usuarios. En «Consumo» ve cuánta IA se gasta: llamadas de hoy por modelo y por papel, qué modelos están apartados y por qué, las apps con IA, las construcciones y los días anteriores.
 
 ## La pieza de IA
 
@@ -32,6 +32,7 @@ Un docente (de primaria, secundaria, FP o academia) necesita a diario pequeñas 
   - **Si fallan todos:** «Los astros no están alineados, inténtalo más tarde.»
   - **Si la app nueva no funciona** tras 2 arreglos, se mantiene la versión anterior y no se pierde nada.
   - **Si la IA genera algo peligroso o prohibido:** los guardarraíles lo rechazan antes de ejecutarlo, y las peticiones de phishing o suplantación se rechazan con «RECHAZADA».
+- **Cómo se gestiona la cuota:** cada app tiene 30 usos de IA al día y cada usuario 10 construcciones, y los dos ven cuántos les quedan («A esta aplicación le quedan 27 de 30 usos de IA hoy»). Los contadores y los modelos apartados se guardan cada día en la rama `datos` (`uso/<fecha>.json`), así que los límites no se pierden si el servidor se reinicia. La cuota que queda en Google no la da su API: el admin tiene un enlace a Google AI Studio.
 
 ## Cómo la he construido
 
@@ -70,6 +71,7 @@ Un docente (de primaria, secundaria, FP o academia) necesita a diario pequeñas 
 | Yo como usuario | Redacpro, mi corrector de redacciones de francés para profesores | Parecía corregir, pero eran 14 reglas fijas; y al subir una foto **no la leía**: corregía una frase de ejemplo inventada como si fuera del alumno | Las apps pueden usar IA con `ia()` (texto e imágenes) y llevan la marca «Con IA»; el Analista avisa de lo que no se puede hacer y el Desarrollador tiene prohibido simular funciones o inventar datos. Reconstruida con IA, lee la foto, detecta si está en francés y pone nota con los errores explicados. |
 | Yo como usuario, en producción | Reconstruir Redacpro con IA | «No hemos conseguido que la aplicación funcione»: tres intentos con error de sintaxis. Los registros apuntaban a un modelo flojo (los buenos estaban sin cuota), pero la causa era nuestra: el código se cortaba en el primer ```` ``` ````, y las apps con IA lo llevan para limpiar las respuestas | El código se extrae hasta el último ```` ``` ```` y el error de sintaxis enseña la línea. Con el mismo modelo flojo, Redacpro se construye en 12-19 s. |
 | Pruebas automáticas del agente | Corregir la foto de una redacción con faltas | Al leer la foto, la IA corregía sin querer «a la plage» y «parceque», y esos errores no puntuaban (4 errores detectados) | Las instrucciones de la IA de las apps exigen transcribir letra a letra, con los errores: pasó a detectar 7. |
+| Yo como admin | Saber cuánta IA se está gastando antes de la corrección | No había forma de verlo, y los límites de 30 usos y 10 construcciones vivían en memoria: Streamlit Cloud los ponía a cero cada vez que dormía la app | Registro de uso diario en la rama `datos` (sobrevive a los reinicios), página «Consumo» para el admin y avisos de lo que queda para los usuarios. |
 | Pruebas automáticas del agente | Construir apps con la cuota de los mejores modelos agotada | Un modelo más flojo insistía en `import streamlit` y la construcción fallaba | Esas líneas se quitan solas y el mensaje de error le dice a la IA qué hacer. |
 
 
