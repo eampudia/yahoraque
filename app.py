@@ -551,16 +551,51 @@ def registered_users():
         return []
 
 
+def users_list():
+    """Every registered user in a row; the name opens their page."""
+    users = registered_users()
+    if not users:
+        st.write("Todavía no hay nadie registrado.")
+        return
+    st.caption(f"{len(users)} usuarios. Pulsa un nombre para ver su aplicación.")
+    widths = [3, 2, 2, 3]
+    for column, title in zip(st.columns(widths), ["Usuario", "Registrado", "Último acceso", "Aplicación"]):
+        column.markdown(f"**{title}**")
+    for registered in users:
+        try:
+            meta = apps.load_meta(registered["id"])
+        except Exception:
+            logging.exception("Loading app data failed")
+            meta = None
+        name, created, last, app = st.columns(widths, vertical_alignment="center")
+        if name.button(registered["name"], key=f"user_{registered['id']}", icon=":material/person:"):
+            st.session_state.selected_user = registered["id"]
+            st.session_state.pop("confirm_delete", None)
+            st.rerun()
+        created.write(local_time(registered["created_at"]) if registered["created_at"] else "—")
+        last.write(local_time(registered["last_access"]) if registered["last_access"] else "—")
+        app.write(
+            (meta["name"] + (" · pública" if meta["public"] else "") + (" · con IA" if meta.get("uses_ai") else ""))
+            if meta else "No tiene"
+        )
+
+
 def users_page():
     st.title("Usuarios")
     user = selected_user()
     if user is None:
-        st.write("Elige un usuario en la barra de la izquierda.")
+        users_list()
         return
 
+    if st.button("Todos los usuarios", icon=":material/arrow_back:", type="tertiary"):
+        del st.session_state.selected_user
+        st.session_state.pop("confirm_delete", None)
+        st.rerun()
     st.header(user["name"])
-    if user["created_at"]:
-        st.caption(f"Registrado el {user['created_at'][:10]}")
+    st.caption(
+        f"Registrado el {local_time(user['created_at']) if user['created_at'] else '—'} · "
+        f"último acceso el {local_time(user['last_access']) if user['last_access'] else '—'}"
+    )
 
     meta = app_meta(user["id"])
     st.subheader(f"Su aplicación: {meta['name']}" if meta else "Su aplicación")
@@ -710,24 +745,6 @@ def usage_page():
     )
 
 
-def users_sidebar():
-    st.subheader("Usuarios registrados")
-    users = registered_users()
-    if not users:
-        st.caption("Todavía no hay nadie.")
-    for registered in users:
-        is_selected = registered["id"] == st.session_state.get("selected_user")
-        if st.button(
-            registered["name"],
-            key=f"user_{registered['id']}",
-            type="primary" if is_selected else "secondary",
-            width="stretch",
-        ):
-            st.session_state.selected_user = registered["id"]
-            st.session_state.pop("confirm_delete", None)
-            st.switch_page(admin_users_page)
-
-
 user = st.session_state.get("user")
 logged_out = st.session_state.get("logged_out")
 if user and st.session_state.pop("remember_session", False):
@@ -796,6 +813,10 @@ off_menu = [view_page, my_app_page] if my_app else [view_page]
 # Our own menu, so the logo can go above it at a readable size
 # (st.logo is at most 32px high).
 navigation = st.navigation(pages, position="hidden")
+# Coming to "Usuarios" from another page shows the list, not the last user opened.
+if navigation.url_path == USERS_URL_PATH and st.session_state.get("current_page") != USERS_URL_PATH:
+    st.session_state.pop("selected_user", None)
+st.session_state.current_page = navigation.url_path
 if shared_app and navigation.url_path != VIEW_URL_PATH:
     # Logging in from a shared link loses the page ("/app" becomes "/"): go back to it.
     st.switch_page(view_page, query_params={"app": shared_app})
@@ -814,8 +835,5 @@ with st.sidebar:
         st.rerun()
     if user["role"] == auth.ROLE_USER:
         delete_my_account(user)
-    if user["role"] == auth.ROLE_ADMIN:
-        st.divider()
-        users_sidebar()
 
 navigation.run()

@@ -123,8 +123,15 @@
 - Si falla: «No hemos podido borrar tu cuenta. Inténtalo de nuevo en un rato.»
 
 ### Gestión de usuarios (solo admin)
-- **Listado:** cuando entra el admin, la barra de la izquierda muestra, debajo del menú, todos los usuarios registrados ordenados por nombre (sin distinguir mayúsculas). El admin no aparece en la lista. Los invitados y los usuarios no ven esta lista.
-- **Detalle:** al pulsar un usuario se abre la página «Usuarios» con su nombre, la fecha de registro, el nombre de su aplicación, el interruptor «Pública», la aplicación funcionando y sus requisitos (desplegables). Si no tiene: «Todavía no tiene aplicación».
+- **Dónde:** en la entrada «Usuarios» del menú del admin. La barra lateral no muestra la lista de usuarios. Los invitados y los usuarios no tienen esta página.
+- **Listado:** al abrir «Usuarios» (también al volver a ella desde el menú) se ve «N usuarios. Pulsa un nombre para ver su aplicación.» y una fila por usuario registrado, ordenados por nombre (sin distinguir mayúsculas), con cuatro columnas:
+  - **Usuario:** su nombre, en un botón.
+  - **Registrado:** fecha y hora de registro.
+  - **Último acceso:** fecha y hora de la última vez que entró (ver abajo), o «—» si no consta.
+  - **Aplicación:** su nombre, con «· pública» y «· con IA» si lo es, o «No tiene».
+  - Las fechas van en la zona horaria del navegador (por ejemplo, 01/11/2026 18:08). El admin no aparece en la lista. Si no hay nadie: «Todavía no hay nadie registrado.»
+- **Último acceso:** se guarda en su `user.json` (`last_access`) al registrarse, al entrar con su nombre y PIN y al volver con la sesión recordada. Para que cada recarga no sea una escritura en GitHub, solo se actualiza si el guardado tiene más de 1 hora; por eso la hora puede ir hasta 1 hora por detrás. Si no se puede guardar, el usuario entra igual y el error va a los logs. Los usuarios que no han entrado desde que existe este dato muestran «—».
+- **Detalle:** al pulsar un nombre se abre su ficha en la misma página: «Todos los usuarios» (para volver a la lista), su nombre, «Registrado el … · último acceso el …», el nombre de su aplicación, el interruptor «Pública», la aplicación funcionando y sus requisitos (desplegables). Si no tiene: «Todavía no tiene aplicación».
 - **Publicar u ocultar:** con el interruptor «Pública» el admin puede hacer pública o privada la app de cualquier usuario, igual que su dueño desde la página de su app. El cambio se guarda al momento, aparece o desaparece de «Apps públicas», y el dueño lo ve en su interruptor. Si no se puede guardar, el interruptor vuelve a su posición anterior y se muestra «No hemos podido cambiarlo. Inténtalo de nuevo en un rato.»
 - **Borrado:** en esa página, «Borrar usuario» pide confirmación («Sí, borrar» / «Cancelar»). Al confirmar se elimina la carpeta del usuario entera (cuenta, requisitos y app) y desaparece de la lista. Con ese nombre se puede volver a registrar cualquiera.
 - Si falla la lectura o el borrado, se muestra un mensaje sencillo y el error real va a los logs.
@@ -273,7 +280,7 @@
 - **Rama `datos`** (nombre configurable con `DATA_BRANCH`): contiene solo los datos de los usuarios. Yahoraque la lee y escribe a través de la API de GitHub; Streamlit no la despliega, así que guardar en ella no reinicia la plataforma.
   - Si la rama no existe, se crea sola, a partir de la rama principal del repositorio, la primera vez que se guarda algo.
   - El código de las apps de los usuarios se lee de esta rama en el momento de ejecutarlas, no de los ficheros desplegados.
-- Cada usuario tiene **una carpeta `users/<hash del nombre>/`** en la rama `datos`. Dentro se guardan su cuenta (`user.json`: nombre, hash del PIN y fecha de registro), sus requisitos (`requisitos.md`), el código de su app (`app.py`) y los datos de la app (`app.json`: nombre, si es pública y la frase «Para qué sirve»).
+- Cada usuario tiene **una carpeta `users/<hash del nombre>/`** en la rama `datos`. Dentro se guardan su cuenta (`user.json`: nombre, hash del PIN, fecha de registro y último acceso), sus requisitos (`requisitos.md`), el código de su app (`app.py`) y los datos de la app (`app.json`: nombre, si es pública y la frase «Para qué sirve»).
 - Fuera de las carpetas de usuario, la carpeta `uso/` guarda el registro de uso de la IA, un fichero por día (ver «Registro de uso»).
 - En desarrollo (`STORAGE_MODE=local`) la misma estructura se guarda en la carpeta `.data/` del disco, que está fuera de git.
 - Cada guardado es un commit en la rama `datos`. Las versiones de cada app, en cambio, se guardan como ficheros propios (`users/<hash>/versiones/<fecha>.json`), para que funcionen igual en local y para listarlas con una sola llamada (ver «Versiones de la app»).
@@ -361,7 +368,9 @@ La app está bien si:
 - Al activar «Pública», la app aparece en «Apps públicas» y un invitado puede abrirla y usarla; al desactivarlo, deja de aparecer y su enlace muestra «Esta aplicación no existe o no es pública.».
 - Tras borrar su app, el usuario vuelve al chat «Crea tu aplicación», el menú muestra «Inicio» en lugar del nombre y la app desaparece de «Apps públicas».
 - Un usuario sin app ve en el menú «Inicio» y «Apps públicas», y «Inicio» abre el chat. Con app, ve solo el nombre de la app (que la abre) y «Apps públicas»; «Cambiar mi aplicación» aparece solo dentro de la página de la app y abre el chat. Al recargar se mantiene.
-- El admin ve en la barra de la izquierda a todos los usuarios registrados; los demás no ven esa lista.
+- El admin ve en «Usuarios» a todos los usuarios registrados, con su fecha de registro, su último acceso y su aplicación (o «No tiene»); la barra lateral no tiene lista de usuarios, y los demás no tienen esa página.
+- Al pulsar un usuario de la lista se ve su ficha con su aplicación funcionando; «Todos los usuarios» vuelve a la lista, y al volver a «Usuarios» desde el menú también se ve la lista.
+- Tras entrar con nombre y PIN, el último acceso de ese usuario en la lista es la hora de entrada; si vuelve a entrar en menos de 1 hora, no cambia.
 - El admin puede abrir cualquier usuario y ver su aplicación (pública o privada), su nombre y sus requisitos.
 - El admin puede hacer pública la app de otro usuario (un invitado la ve en «Apps públicas») y volver a hacerla privada (deja de verse).
 - Tras confirmar el borrado, el usuario desaparece de la lista, su carpeta ya no existe y no puede entrar con su nombre y PIN.

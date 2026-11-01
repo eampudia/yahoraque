@@ -13,6 +13,7 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import time
 from datetime import datetime, timezone
 
@@ -25,6 +26,8 @@ ROLE_GUEST = "guest"
 ROLE_USER = "user"
 ROLE_ADMIN = "admin"
 SESSION_DAYS = 7
+# The last access is saved at most this often, so a reload is not a GitHub write.
+ACCESS_SAVE_EVERY = 60 * 60
 
 
 class LoginError(Exception):
@@ -67,6 +70,28 @@ def guest():
     return {"role": ROLE_GUEST, "id": None, "name": "Invitado"}
 
 
+def _now():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _record_access(uid, stored):
+    """Save in user.json when the user came in (with the PIN or a saved session).
+
+    Never blocks the access: if saving fails, the user gets in anyway.
+    """
+    last = stored.get("last_access") or stored.get("created_at")
+    if last and time.time() - datetime.fromisoformat(last).timestamp() < ACCESS_SAVE_EVERY:
+        return
+    try:
+        storage.write_file(
+            _user_path(uid), json.dumps({**stored, "last_access": _now()}, indent=2),
+            f"Acceso de {uid}",
+        )
+        list_users.clear()
+    except Exception:
+        logging.exception("Saving last access failed")
+
+
 def login(name, pin):
     """Return the session for an existing user or the admin."""
     if not normalize_name(name) or not pin:
@@ -85,6 +110,7 @@ def login(name, pin):
     stored = json.loads(data)
     if not hmac.compare_digest(stored["pin_hash"], _hash_pin(uid, pin)):
         raise LoginError("Nombre o PIN incorrectos.")
+    _record_access(uid, stored)
     return _session(ROLE_USER, name, stored.get("created_at"))
 
 
@@ -105,8 +131,9 @@ def register(name, pin):
     user = {
         "name": name.strip(),
         "pin_hash": _hash_pin(uid, pin),
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": _now(),
     }
+    user["last_access"] = user["created_at"]
     storage.write_file(path, json.dumps(user, indent=2), f"Nuevo usuario {uid}")
     list_users.clear()
     return _session(ROLE_USER, name, user["created_at"])
@@ -114,7 +141,7 @@ def register(name, pin):
 
 @st.cache_data(ttl=300, show_spinner=False)
 def list_users():
-    """Registered users, sorted by name: [{"id", "name", "created_at"}].
+    """Registered users, sorted by name: [{"id", "name", "created_at", "last_access"}].
 
     Cached because on GitHub each user is one API call.
     """
@@ -128,6 +155,8 @@ def list_users():
                 # Users created before names were stored only have their hash.
                 "name": user.get("name") or uid,
                 "created_at": user.get("created_at"),
+                # Users who have not come in since it is saved have none.
+                "last_access": user.get("last_access"),
             }
         )
     return sorted(users, key=lambda user: normalize_name(user["name"]))
@@ -176,5 +205,6 @@ def restore_session(token):
         # Deleted, or deleted and registered again by someone else.
         if stored is None or json.loads(stored).get("created_at") != data.get("created_at"):
             return None
+        _record_access(data["id"], json.loads(stored))
         return data
     return data if role == ROLE_GUEST else None
