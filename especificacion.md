@@ -291,6 +291,7 @@
 ### Versiones de la app
 - **Qué es una versión:** cada construcción que funciona guarda una versión con su código y sus requisitos, en `users/<hash>/versiones/<id>.json` (`id` = fecha y hora UTC con microsegundos, que ordena las versiones). `app.json` guarda cuál es la actual (`version`).
 - **Cuántas:** se guardan las **10 últimas**; al guardar la 11.ª se borra la más antigua.
+- **Aviso de que se guarda:** en la página de su app, justo debajo de la app y encima de «Versiones», el dueño ve en gris, con un icono de nube: «Tu aplicación y sus versiones se guardan: las encontrarás aquí la próxima vez que entres.» Sale de la prueba de un compañero, que echó en falta la persistencia porque nada en pantalla la mostraba. No sale en «Apps públicas» ni en la página pública de la app.
 - **Apps de antes de las versiones:** la primera vez que se reconstruyen, su versión anterior se guarda como «Versión 1», así no se pierde.
 - **Dónde se ven:** en la página de la app del dueño, en el desplegable «Versiones (N)», de la más nueva a la más antigua. Cada una muestra «Versión N», la fecha y hora en la zona horaria del navegador (por ejemplo, 28/10/2026 20:25), «· la que tienes ahora» si es la actual, el botón «Lo que pediste» (sus requisitos) y, si no es la actual, el botón «Restaurar».
 - **Restaurar:** la versión elegida pasa a ser la app actual (código, requisitos y frase «Para qué sirve»). No se borra ni se crea ninguna versión, así que se puede volver a la más nueva. El nombre y la visibilidad (pública o privada) no cambian. Se muestra «Has vuelto a la versión N.» y el chat del Analista parte de los requisitos restaurados.
@@ -359,6 +360,7 @@ La app está bien si:
 - Un usuario puede volver a una versión anterior de su app: tras cambiarla, en «Versiones» aparecen las dos; al restaurar la primera, la app vuelve a ser la de antes, la lista marca esa como «la que tienes ahora» y la más nueva sigue disponible para volver.
 - Tras restaurar, el chat «Cambiar <nombre>» muestra en «Lo que ya me pediste» los requisitos de la versión restaurada.
 - Con 12 construcciones quedan 10 versiones (desaparecen las 2 más antiguas). Al borrar la app se borran también sus versiones.
+- El dueño ve «Tu aplicación y sus versiones se guardan…» debajo de su app; en «Apps públicas» no aparece.
 - Un usuario puede borrar su app (su cuenta sigue y puede crear otra) y su propia cuenta: tras «Borrar mi cuenta», ve la pantalla de acceso con «Tu cuenta se ha borrado.» y ya no puede entrar con su nombre y PIN.
 - Un usuario nuevo ve las cuatro ideas de ejemplo en el chat vacío; al pulsar una, el analista responde a ese texto.
 - En el chat del Analista se ve el aviso «El analista es una inteligencia artificial y puede cometer errores…», con el chat vacío y con mensajes; en «Apps públicas» y en la página de una app, no.
