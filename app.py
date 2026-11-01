@@ -38,6 +38,9 @@ AI_DISCLAIMER = (
     "El analista es una inteligencia artificial y puede cometer errores. "
     "Revisa los requisitos antes de confirmar la construcción."
 )
+SAVED_NOTICE = (
+    "Tu aplicación y sus versiones se guardan: las encontrarás aquí la próxima vez que entres."
+)
 BUILDS_PER_DAY = 10
 BUILD_MESSAGES = {
     "ai": ASTROS_MESSAGE,
@@ -177,6 +180,8 @@ def home_page():
         st.code(share_url(user["id"]), language=None)
 
     show_app(user["id"], meta)
+    # A classmate missed persistence because nothing on screen showed it.
+    st.caption(f":material/cloud_done: {SAVED_NOTICE}")
     versions_section(user["id"], meta)
     delete_my_app(user["id"], meta["name"])
 

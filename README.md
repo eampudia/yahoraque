@@ -7,15 +7,15 @@
 
 ## Pitch
 
-**El problema.** Un docente necesita cada semana pequeñas herramientas que nadie le hace: hacer grupos al azar, un juego para repasar las conjugaciones o, si es profesor de idiomas en una escuela oficial (EOI), corregir decenas de redacciones según el nivel de cada alumno (A1, A2…), a veces manuscritas. Hoy lo hace a mano y fuera de clase, porque no sabe programar y su centro no tiene presupuesto ni programador para encargarlas.
+**Problema:** un docente necesita cada semana pequeñas herramientas que nadie le hace (hacer grupos al azar, un juego para repasar o, si es profesor de idiomas, corregir decenas de redacciones), y ni sabe programar ni su centro tiene presupuesto para encargarlas.
 
-**La solución.** Con Yahoraque lo describe hablando con un analista y en uno o dos minutos tiene su aplicación funcionando, con nombre propio, versiones y un enlace para compartirla con alumnos y compañeros, que la abren sin crear cuenta.
+**Solución:** con Yahoraque lo describe hablando con un analista y en uno o dos minutos tiene su aplicación funcionando, con nombre propio, versiones y un enlace para compartirla con alumnos y compañeros.
 
-**Lo que aporta la IA, en tres papeles.** El analista convierte una idea vaga en requisitos claros. El desarrollador escribe la aplicación, comprueba que arranca y la arregla si falla. Y dentro de la app, la IA puede leer la foto de una redacción manuscrita y proponer una nota con los errores explicados. La última palabra siempre la tiene el docente.
+**Lo que aporta la IA:** convierte una idea vaga en requisitos claros, escribe y prueba la aplicación y, dentro de ella, puede leer la foto de una redacción manuscrita y proponer una nota con los errores explicados.
 
-**Lo aprendido al probarla.** Mi corrector de francés parecía funcionar, pero al subir una foto corregía una frase inventada. Ahora la IA lee la foto, detecta si está en francés y encontró los 7 errores de una redacción de prueba.
+**Lo aprendido en la prueba:** mi corrector de francés parecía funcionar, pero al subir una foto corregía una frase inventada; ahora la IA lee la foto, detecta si está en francés y encontró los 7 errores de una redacción de prueba.
 
-**Siguiente paso.** Probarla con los profesores de un centro y que las aplicaciones puedan guardar datos, como las notas de un trimestre.
+**Siguiente paso:** probarla con los profesores de un centro y que las aplicaciones puedan guardar datos, como las notas de un trimestre.
 
 ## El problema
 
@@ -45,7 +45,7 @@ Un docente (de primaria, secundaria, FP o academia) necesita a diario pequeñas 
 ## Cómo la he construido
 
 - **Herramientas:** Claude Code (extensión de VS Code) como agente, Docker para ejecutar y probar todo, y Playwright para las pruebas con navegadores reales (Chrome, Firefox y Safari/WebKit).
-- **Fichero de contexto del agente:** [CLAUDE.md](CLAUDE.md). Le obliga a trabajar solo en Docker, a fijar versiones, a no subir secretos, a no hacer commit sin mi permiso y a convertir mis ideas en reglas comprobables en [especificacion.md](especificacion.md).
+- **Fichero de contexto del agente:** [CLAUDE.md](CLAUDE.md). Le obliga a trabajar solo en Docker, a fijar versiones, a no subir secretos, a no hacer commit sin mi permiso y a convertir mis ideas en reglas comprobables en [especificacion.md](especificacion.md). Además le da el mapa del proyecto, cómo probar sin tocar los datos reales, las normas de seguridad de las apps generadas (nunca aflojar los guardarraíles, la clave no sale del servidor) y las lecciones aprendidas en producción.
 - **Prompts de la app:** las instrucciones que recibe la IA están en [prompts/analista.md](prompts/analista.md), [prompts/desarrollador.md](prompts/desarrollador.md) y [prompts/ia_apps.md](prompts/ia_apps.md) (la IA que usan las apps). El código las lee de ahí, así que se pueden leer y reutilizar tal cual.
 - **Prompts clave al agente** (copiados tal cual):
   1. «continua con el modo desarrollador»
@@ -80,7 +80,7 @@ Un docente (de primaria, secundaria, FP o academia) necesita a diario pequeñas 
 | Yo como usuario, en producción | Reconstruir Redacpro con IA | «No hemos conseguido que la aplicación funcione»: tres intentos con error de sintaxis. Los registros apuntaban a un modelo flojo (los buenos estaban sin cuota), pero la causa era nuestra: el código se cortaba en el primer ```` ``` ````, y las apps con IA lo llevan para limpiar las respuestas | El código se extrae hasta el último ```` ``` ```` y el error de sintaxis enseña la línea. Con el mismo modelo flojo, Redacpro se construye en 12-19 s. |
 | Pruebas automáticas del agente | Corregir la foto de una redacción con faltas | Al leer la foto, la IA corregía sin querer «a la plage» y «parceque», y esos errores no puntuaban (4 errores detectados) | Las instrucciones de la IA de las apps exigen transcribir letra a letra, con los errores: pasó a detectar 7. |
 | Yo como admin | Saber cuánta IA se está gastando antes de la corrección | No había forma de verlo, y los límites de 30 usos y 10 construcciones vivían en memoria: Streamlit Cloud los ponía a cero cada vez que dormía la app | Registro de uso diario en la rama `datos` (sobrevive a los reinicios), página «Consumo» para el admin y avisos de lo que queda para los usuarios. |
-| Francisco Rossi, compañero | Usar la app en producción | Le gustaron la idea y la implementación. Echó en falta que los datos se guardaran, la doble autenticación (2FA) y poder exportar las apps a móvil o a escritorio de Windows | Nada en el código, por decisión: los datos ya se guardan en la rama `datos`, aunque no se notaba; guardar datos de alumnos dentro de las apps exige una base de datos privada (siguiente paso). La 2FA obligaría a pedir email o teléfono a profesores que hoy entran solo con nombre y PIN. Las apps ya se abren en el móvil con su enlace, y exportarlas sacaría la clave de la IA del servidor. |
+| Francisco Rossi, compañero | Usar la app en producción | Le gustaron la idea y la implementación. Echó en falta que los datos se guardaran, la doble autenticación (2FA) y poder exportar las apps a móvil o a escritorio de Windows | La persistencia ya existía (rama `datos`), pero no se notaba: ahora, debajo de su app, el dueño lee «Tu aplicación y sus versiones se guardan: las encontrarás aquí la próxima vez que entres.» Guardar datos de alumnos dentro de las apps exige una base de datos privada (siguiente paso). La 2FA obligaría a pedir email o teléfono a profesores que hoy entran solo con nombre y PIN. Las apps ya se abren en el móvil con su enlace, y exportarlas sacaría la clave de la IA del servidor. |
 | Pruebas automáticas del agente | Construir apps con la cuota de los mejores modelos agotada | Un modelo más flojo insistía en `import streamlit` y la construcción fallaba | Esas líneas se quitan solas y el mensaje de error le dice a la IA qué hacer. |
 
 
