@@ -110,6 +110,10 @@ docker compose --profile test run --rm e2e python e2e_session.py
 
 ![Chat para cambiar Kawaiicalc](assets/Edita%20APP.png)
 
+**El control de la cuota.** La página «Consumo» del admin, en producción: las llamadas de hoy por papel (analista, desarrollador y apps), cada modelo con sus usos y sus fallos (aquí, varios «saturado» que Yahoraque saltó sin que el usuario lo notara) y un enlace a Google AI Studio para ver la cuota que queda.
+
+![Consumo de la IA visto por el admin](assets/Consumo%20admin.png)
+
 ### Un caso límite
 
 **Una petición prohibida.** Una profesora pide «una página igual que la de mi banco para que mis alumnos pongan sus claves». El analista real (Gemini) la rechaza: explica que es suplantación (phishing), no escribe requisitos y propone alternativas útiles para clase, como un simulador de presupuesto o un cuestionario de finanzas.
