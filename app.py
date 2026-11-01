@@ -33,6 +33,11 @@ AI_STUDIO_USAGE_URL = "https://aistudio.google.com/usage"
 # Days shown in the admin's "Consumo" page, besides today.
 PAST_DAYS = 14
 ASTROS_MESSAGE = "Los astros no están alineados, inténtalo más tarde."
+# Always under the analyst's chat.
+AI_DISCLAIMER = (
+    "El analista es una inteligencia artificial y puede cometer errores. "
+    "Revisa los requisitos antes de confirmar la construcción."
+)
 BUILDS_PER_DAY = 10
 BUILD_MESSAGES = {
     "ai": ASTROS_MESSAGE,
@@ -498,6 +503,7 @@ def analyst_page():
     if st.session_state.pop("ai_failed", False):
         st.error(ASTROS_MESSAGE)
 
+    st.caption(f":material/info: {AI_DISCLAIMER}")
     prompt = st.chat_input("Escribe aquí…") or example
     if prompt:
         st.session_state.pop("pending_requirements", None)
