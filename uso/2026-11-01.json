@@ -2,13 +2,15 @@
   "apps": {
     "b04e95d0b09d": 2
   },
-  "builds": {},
+  "builds": {
+    "94aec9fbed98": 1
+  },
   "failures": {
     "gemini-3.6-flash": {
       "saturado": 1
     },
     "gemini-3.7-flash": {
-      "saturado": 2
+      "saturado": 3
     },
     "gemini-3.8-flash": {
       "saturado": 2
@@ -22,7 +24,7 @@
       "apps": 2
     },
     "gemini-3.6-flash": {
-      "analista": 1
+      "analista": 3
     }
   },
   "resting": {
@@ -32,7 +34,7 @@
     },
     "gemini-3.7-flash": {
       "reason": "saturado",
-      "until": 1793556683.685316
+      "until": 1793561594.5687742
     },
     "gemini-3.8-flash": {
       "reason": "saturado",
