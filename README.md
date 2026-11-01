@@ -7,8 +7,15 @@
 
 ## Pitch
 
-Un docente necesita cada semana pequeñas herramientas que nadie le hace (hacer grupos al azar, un juego para repasar o, si es profesor de idiomas, corregir decenas de redacciones), y ni sabe programar ni su centro tiene presupuesto para encargarlas. Con Yahoraque lo describe hablando con un analista y en uno o dos minutos tiene su aplicación funcionando, con nombre propio, versiones y un enlace para compartirla con alumnos y compañeros. La IA hace tres trabajos: convierte una idea vaga en requisitos claros, escribe y prueba la aplicación, y dentro de ella puede leer la foto de una redacción manuscrita y proponer una nota con los errores explicados. 
-Probarla como profesor fue lo que más me enseñó: mi corrector de francés parecía funcionar, pero al subir una foto corregía una frase inventada; ahora la IA lee la foto, detecta si está en francés y encontró los 7 errores de una redacción de prueba. El siguiente paso es probarla con los profesores de un centro y que las aplicaciones puedan guardar datos, como las notas de un trimestre.
+**El problema.** Un docente necesita cada semana pequeñas herramientas que nadie le hace: hacer grupos al azar, un juego para repasar las conjugaciones o, si es profesor de idiomas en una escuela oficial (EOI), corregir decenas de redacciones según el nivel de cada alumno (A1, A2…), a veces manuscritas. Hoy lo hace a mano y fuera de clase, porque no sabe programar y su centro no tiene presupuesto ni programador para encargarlas.
+
+**La solución.** Con Yahoraque lo describe hablando con un analista y en uno o dos minutos tiene su aplicación funcionando, con nombre propio, versiones y un enlace para compartirla con alumnos y compañeros, que la abren sin crear cuenta.
+
+**Lo que aporta la IA, en tres papeles.** El analista convierte una idea vaga en requisitos claros. El desarrollador escribe la aplicación, comprueba que arranca y la arregla si falla. Y dentro de la app, la IA puede leer la foto de una redacción manuscrita y proponer una nota con los errores explicados. La última palabra siempre la tiene el docente.
+
+**Lo aprendido al probarla.** Mi corrector de francés parecía funcionar, pero al subir una foto corregía una frase inventada. Ahora la IA lee la foto, detecta si está en francés y encontró los 7 errores de una redacción de prueba.
+
+**Siguiente paso.** Probarla con los profesores de un centro y que las aplicaciones puedan guardar datos, como las notas de un trimestre.
 
 ## El problema
 
