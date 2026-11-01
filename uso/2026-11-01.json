@@ -24,7 +24,8 @@
       "apps": 2
     },
     "gemini-3.6-flash": {
-      "analista": 3
+      "analista": 3,
+      "desarrollador": 1
     }
   },
   "resting": {
