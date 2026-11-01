@@ -1,6 +1,6 @@
 {
   "name": "Ingletin",
-  "public": false,
+  "public": true,
   "description": "Practicar y repasar vocabulario b\u00e1sico en ingl\u00e9s mediante un juego de preguntas r\u00e1pidas con puntuaci\u00f3n.",
   "version": "20261101T174809860929Z",
   "uses_ai": false
