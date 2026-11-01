@@ -21,7 +21,7 @@ Un docente (de primaria, secundaria, FP o academia) necesita a diario pequeñas 
 4. **La usas.** Tu app aparece en el menú con su nombre.
 5. **Con IA, si hace falta.** Tu app también puede usar IA: corregir o resumir textos, traducir o leer una foto (por ejemplo, una redacción manuscrita), con un límite de 30 usos al día. Esas apps llevan la marca «Con IA».
 6. **La compartes o la cambias.** La puedes hacer pública: aparece en «Apps públicas» y cualquiera la abre con un enlace, sin cuenta. Puedes pedir cambios en el chat (el analista ya conoce tu app), volver a cualquiera de sus 10 últimas versiones, borrarla y empezar otra, o borrar tu cuenta.
-7. **El admin** ve a todos los usuarios en la barra lateral, abre sus apps, las publica u oculta y puede borrar usuarios. En «Consumo» ve cuánta IA se gasta: llamadas de hoy por modelo y por papel, qué modelos están apartados y por qué, las apps con IA, las construcciones y los días anteriores.
+7. **El admin** ve en «Usuarios» la lista de usuarios, con su fecha de registro, su último acceso y su app; al pulsar uno abre su app, las publica u oculta y puede borrar usuarios. En «Consumo» ve cuánta IA se gasta: llamadas de hoy por modelo y por papel, qué modelos están apartados y por qué, las apps con IA, las construcciones y los días anteriores.
 
 ## La pieza de IA
 
@@ -100,7 +100,7 @@ docker compose --profile test run --rm e2e python e2e_session.py
 
 ![Javijator abierta por un invitado](assets/APP%20javijator.png)
 
-**Apps públicas, vistas por el admin.** Cada app tiene el nombre que le inventó la IA y la frase «Para qué sirve» de sus requisitos. En la barra lateral, debajo del menú, el admin ve a los usuarios registrados. El primero sale con su hash porque se registró antes de que se guardaran los nombres.
+**Apps públicas, vistas por el admin.** Cada app tiene el nombre que le inventó la IA y la frase «Para qué sirve» de sus requisitos. En esta captura, de una versión anterior, la lista de usuarios aún estaba en la barra lateral (el primero sale con su hash porque se registró antes de que se guardaran los nombres); ahora está en la página «Usuarios», con su registro, su último acceso y su app.
 
 ![Apps públicas vistas por el admin](assets/APP%20Publicas.png)
 
