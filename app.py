@@ -5,6 +5,7 @@ Access with name + PIN, guest or admin.
 
 import logging
 import re
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -20,12 +21,17 @@ import developer
 import llm
 import session_cookie
 import storage
+import usage
 import waiting
 
 ANALYST_URL_PATH = "mi-app"
 USERS_URL_PATH = "usuarios"
 PUBLIC_URL_PATH = "publicas"
 VIEW_URL_PATH = "app"
+USAGE_URL_PATH = "consumo"
+AI_STUDIO_USAGE_URL = "https://aistudio.google.com/usage"
+# Days shown in the admin's "Consumo" page, besides today.
+PAST_DAYS = 14
 ASTROS_MESSAGE = "Los astros no están alineados, inténtalo más tarde."
 BUILDS_PER_DAY = 10
 BUILD_MESSAGES = {
@@ -165,7 +171,7 @@ def home_page():
         st.caption(":material/share: Enlace para compartir (pulsa el icono de copiar):")
         st.code(share_url(user["id"]), language=None)
 
-    show_app(user["id"])
+    show_app(user["id"], meta)
     versions_section(user["id"], meta)
     delete_my_app(user["id"], meta["name"])
 
@@ -339,11 +345,14 @@ def app_view_page():
     meta = apps.load_meta(uid)
     st.title(meta["name"])
     ai_badge(meta)
-    show_app(uid)
+    show_app(uid, meta)
 
 
-def show_app(uid):
-    """Show the user's app in a frame. Returns False if there is none."""
+def show_app(uid, meta=None):
+    """Show the user's app in a frame. Returns False if there is none.
+
+    Under an app that uses AI, the uses it has left today (after this run's calls).
+    """
     try:
         if apps.load(uid) is None:
             return False
@@ -353,6 +362,11 @@ def show_app(uid):
         return True
     with st.container(border=True):
         apps.show(uid)
+    if meta and meta.get("uses_ai"):
+        st.caption(
+            f":material/auto_awesome: A esta aplicación le quedan {app_ai.remaining_today(uid)} "
+            f"de {app_ai.DAILY_LIMIT} usos de IA hoy, entre todas las personas que la usan."
+        )
     return True
 
 
@@ -383,21 +397,18 @@ def show_requirements(requirements):
         st.markdown(requirements_markdown(requirements))
 
 
-@st.cache_resource
-def _builds_today():
-    # Shared by all sessions: (user id, UTC date) -> builds. Resets if the server restarts.
-    return {}
+def builds_left(user):
+    """Builds the user has left today (None for the admin, who has no limit)."""
+    if user["role"] == auth.ROLE_ADMIN:
+        return None
+    return max(BUILDS_PER_DAY - usage.builds(user["id"]), 0)
 
 
 def build_limit_reached(user):
-    """Count a build attempt; True if the user has none left today. The admin has no limit."""
-    if user["role"] == auth.ROLE_ADMIN:
-        return False
-    builds = _builds_today()
-    today = (user["id"], datetime.now(timezone.utc).date().isoformat())
-    if builds.get(today, 0) >= BUILDS_PER_DAY:
+    """Count a build attempt; True if the user has none left today."""
+    if builds_left(user) == 0:
         return True
-    builds[today] = builds.get(today, 0) + 1
+    usage.count_build(user["id"])
     return False
 
 
@@ -420,6 +431,9 @@ def build_app(uid, requirements):
     except Exception:
         logging.exception("Building app failed")
         return "error"
+    finally:
+        # The calls of the build, saved now rather than in a few minutes.
+        usage.save_now()
     return "ok"
 
 
@@ -451,7 +465,11 @@ def analyst_page():
     if pending:
         show_requirements(pending)
         st.write("¿Empezamos a construirla?")
-        st.caption("Construirla tarda 1 o 2 minutos.")
+        left = builds_left(user)
+        st.caption(
+            "Construirla tarda 1 o 2 minutos."
+            + ("" if left is None else f" Hoy puedes construirla {left} {'vez' if left == 1 else 'veces'} más.")
+        )
         yes, change = st.columns(2)
         if yes.button("¡Sí, adelante!", type="primary", width="stretch"):
             if build_limit_reached(user):
@@ -550,7 +568,7 @@ def users_page():
         ai_badge(meta)
     if meta:
         public_toggle(user["id"], meta)
-    if not show_app(user["id"]):
+    if not show_app(user["id"], meta):
         st.write("Todavía no tiene aplicación.")
     try:
         requirements = storage.read_file(apps.requirements_path(user["id"]))
@@ -586,6 +604,110 @@ def users_page():
     if cancel.button("Cancelar", width="stretch"):
         del st.session_state.confirm_delete
         st.rerun()
+
+
+def _sum_roles(models):
+    """Calls per role, from {model: {role: calls}}."""
+    return {role: sum(calls.get(role, 0) for calls in models.values()) for role in usage.ROLES}
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def past_day_usage(day):
+    return usage.day_usage(day)
+
+
+def usage_page():
+    """The admin sees how much AI is used: today, per model, app and user, and the last days."""
+    st.title("Consumo de la IA")
+    st.caption(
+        f"Hoy es {usage.today()} (los días cuentan en hora UTC). Cuánta cuota queda en Google "
+        "no lo dice su API: se ve en Google AI Studio."
+    )
+    st.link_button("Ver la cuota en Google AI Studio", AI_STUDIO_USAGE_URL, icon=":material/open_in_new:")
+
+    today = usage.day_usage()
+    roles = _sum_roles(today["models"])
+    total, analyst_calls, developer_calls, apps_calls = st.columns(4)
+    total.metric("Llamadas hoy", sum(roles.values()))
+    analyst_calls.metric("Del analista", roles["analista"])
+    developer_calls.metric("Del desarrollador", roles["desarrollador"])
+    apps_calls.metric("De las apps", roles["apps"])
+
+    st.subheader("Modelos")
+    try:
+        models = llm.available_models()
+    except Exception:
+        logging.exception("Listing models failed")
+        st.warning("No hemos podido listar los modelos de Google. Se ven solo los que se han usado hoy.")
+        models = []
+    seen = set(today["models"]) | set(today["failures"]) | set(today["resting"])
+    rows = []
+    for model in models + sorted(seen - set(models)):
+        rest = today["resting"].get(model)
+        resting = rest and rest["until"] > time.time()
+        calls = today["models"].get(model, {})
+        rows.append({
+            "Modelo": model,
+            "Estado": f"Apartado hasta {local_time(datetime.fromtimestamp(rest['until'], timezone.utc).isoformat())} ({rest['reason']})"
+            if resting else "Disponible",
+            **{role.capitalize(): calls.get(role, 0) for role in usage.ROLES},
+            "Fallos hoy": ", ".join(
+                f"{reason}: {count}" for reason, count in today["failures"].get(model, {}).items()
+            ),
+        })
+    st.caption("En orden de preferencia para el analista y el desarrollador; las apps empiezan por los más ligeros.")
+    st.dataframe(rows, hide_index=True)
+
+    names = {registered["id"]: registered["name"] for registered in registered_users()}
+    st.subheader("Apps con IA")
+    if not today["apps"]:
+        st.caption("Hoy ninguna app ha usado la IA.")
+    else:
+        app_rows = []
+        for uid, count in sorted(today["apps"].items(), key=lambda item: -item[1]):
+            meta = app_meta(uid)
+            app_rows.append({
+                "App": meta["name"] if meta else "(borrada)",
+                "Dueño": names.get(uid, uid),
+                "Usos hoy": f"{count} de {app_ai.DAILY_LIMIT}",
+            })
+        st.dataframe(app_rows, hide_index=True)
+
+    st.subheader("Construcciones")
+    if not today["builds"]:
+        st.caption("Hoy nadie ha construido su aplicación (el admin no cuenta).")
+    else:
+        st.dataframe(
+            [
+                {"Usuario": names.get(uid, uid), "Construcciones hoy": f"{count} de {BUILDS_PER_DAY}"}
+                for uid, count in sorted(today["builds"].items(), key=lambda item: -item[1])
+            ],
+            hide_index=True,
+        )
+
+    st.subheader("Días anteriores")
+    try:
+        days = [day for day in usage.saved_days() if day != usage.today()][:PAST_DAYS]
+        history = [(day, past_day_usage(day)) for day in days]
+    except Exception:
+        logging.exception("Reading usage history failed")
+        st.error("No hemos podido leer los días anteriores. Inténtalo de nuevo en un rato.")
+        return
+    if not history:
+        st.caption("Todavía no hay días anteriores guardados.")
+        return
+    st.dataframe(
+        [
+            {
+                "Día": day,
+                **{role.capitalize(): count for role, count in _sum_roles(data["models"]).items()},
+                "Fallos": sum(sum(reasons.values()) for reasons in data["failures"].values()),
+                "Construcciones": sum(data["builds"].values()),
+            }
+            for day, data in history
+        ],
+        hide_index=True,
+    )
 
 
 def users_sidebar():
@@ -659,6 +781,7 @@ view_page = st.Page(
     app_view_page, title="Aplicación", url_path=VIEW_URL_PATH, visibility="hidden"
 )
 admin_users_page = st.Page(users_page, title="Usuarios", url_path=USERS_URL_PATH)
+admin_usage_page = st.Page(usage_page, title="Consumo", url_path=USAGE_URL_PATH)
 if is_guest:
     pages = [public_list_page, view_page]
 elif my_app:
@@ -666,7 +789,7 @@ elif my_app:
 else:
     pages = [my_app_page, public_list_page, view_page]
 if user["role"] == auth.ROLE_ADMIN:
-    pages.append(admin_users_page)
+    pages += [admin_users_page, admin_usage_page]
 # Reached from links, not from the menu: an app's page, and the chat to change
 # your app (its link is on the app's page).
 off_menu = [view_page, my_app_page] if my_app else [view_page]

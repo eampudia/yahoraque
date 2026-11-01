@@ -50,8 +50,9 @@
    - Límite por minuto: 1 minuto.
    - Saturado, error del servidor o sin respuesta en 60 segundos: 5 minutos.
    - Error en la petición (probablemente un fallo nuestro): no se aparta.
+   - Los modelos apartados se guardan en el registro de uso (sección 7), así que siguen apartados aunque se reinicie el servidor.
 5. **Si fallan todos:** se muestra "Los astros no están alineados, inténtalo más tarde."
-6. **Registro interno:** qué modelo respondió y cuáles fallaron se anota en los logs, nunca en la pantalla del usuario.
+6. **Registro interno:** qué modelo respondió y cuáles fallaron se anota en los logs y en el registro de uso, nunca en la pantalla del usuario. El admin lo ve en «Consumo» (sección 5).
 - **Instrucciones para el modelo (system prompt):** el texto exacto está en [prompts/analista.md](prompts/analista.md) y [prompts/desarrollador.md](prompts/desarrollador.md), y el código los lee de ahí (`prompts.py`), así que lo que se ve en esos ficheros es lo que recibe la IA. Las partes que cambian van como `{MARCADORES}` (las marcas de los requisitos, los módulos y funciones permitidos, el kit de librerías…), explicados al principio de cada fichero. Resumen:
   - **Modo Analista:** se comporta como un analista tratando con un cliente. Hace las preguntas necesarias y, cuando ve que puede diseñar algo, muestra los requerimientos en lenguaje no técnico y pregunta si se empieza a construir.
     - **Si el usuario ya tiene app:** el analista recibe su nombre y sus requisitos guardados. Saluda con «¡Hola! Tu aplicación <nombre> ya está funcionando. Cuéntame qué te gustaría cambiar o añadir.», trata lo que pida como cambios sobre esa app (salvo que diga claramente que quiere otra distinta), no vuelve a preguntar lo que ya está en los requisitos y, al terminar, escribe los requisitos **completos** actualizados: lo que se mantiene más lo que cambia, con el mismo título.
@@ -67,7 +68,8 @@
 - **Solo al pulsar un botón:** la página de JavaScript no puede llamar a `ia()`, así que una app con IA recoge los datos con widgets de Streamlit y la llama dentro de `if st.button(...)`. Si una app la llama al cargar, la prueba de arranque falla con «ia() solo se puede usar al pulsar un botón, no al cargar la app.» y la IA la reescribe.
 - **Protección de la cuota gratuita**, que es la misma que construye las apps:
   - Las apps usan primero los modelos más ligeros (`flash-lite`, luego `flash`, luego `pro`). En la capa gratuita cada modelo tiene su propia cuota, así que no gastan la de los que usan el Analista y el Desarrollador.
-  - **30 usos al día por app**, entre todas las personas que la usen (`app_ai.DAILY_LIMIT`). El contador está en memoria: se reinicia si se reinicia el servidor.
+  - **30 usos al día por app**, entre todas las personas que la usen (`app_ai.DAILY_LIMIT`). Se cuentan en el registro de uso (sección 7), así que el límite se mantiene aunque se reinicie el servidor.
+  - **Lo que queda, a la vista:** debajo de cada app con IA (en la página del dueño, en la del enlace y en «Usuarios» del admin) se ve «A esta aplicación le quedan N de 30 usos de IA hoy, entre todas las personas que la usan.», ya descontados los usos de esa misma carga de la página.
   - Pregunta de hasta 10.000 caracteres y respuesta de hasta 2.048 tokens.
   - Repetir exactamente la misma pregunta en la misma sesión reutiliza la respuesta y no gasta un uso.
 - **Avisos** (salen en la app y la detienen en ese punto; el resto de Yahoraque sigue funcionando):
@@ -90,6 +92,7 @@
 | Ver una app privada | No | Solo la suya | Sí |
 | Borrar una app | No | Sí, solo la suya | Solo junto con su usuario |
 | Borrar una cuenta | No | Sí, solo la suya | Sí, cualquiera |
+| Ver el consumo de la IA («Consumo») | No | No | Sí |
 
 - Cada usuario registrado tiene **una sola aplicación**. Para tener otra distinta, borra la suya y crea una nueva (o pide cambios en el chat).
 - Hay un único admin (el propietario de Yahoraque). Puede borrar cualquier usuario junto con su aplicación.
@@ -127,6 +130,18 @@
 - Si falla la lectura o el borrado, se muestra un mensaje sencillo y el error real va a los logs.
 - La lista se guarda en memoria hasta 5 minutos para no hacer una llamada a GitHub por usuario en cada clic. Se refresca al momento cuando alguien se registra o se borra un usuario.
 
+### Consumo de la IA (solo admin)
+- **Dónde:** página «Consumo» del menú del admin (`/consumo`). Los usuarios y los invitados no la tienen.
+- **La cuota de Google no se puede ver aquí:** la API de Gemini no dice cuánta cuota queda. La página lo explica y tiene el botón «Ver la cuota en Google AI Studio». Lo que muestra es el uso que cuenta Yahoraque, sacado del registro de uso (sección 7).
+- **Hoy:**
+  - Cuatro cifras: «Llamadas hoy» y cuántas son «Del analista», «Del desarrollador» y «De las apps». Una llamada es una respuesta de un modelo; los intentos fallidos no cuentan como llamada.
+  - **Modelos:** todos los disponibles para la clave, en orden de preferencia, con su estado («Disponible» o «Apartado hasta <fecha y hora> (<motivo>)»), sus llamadas de hoy por papel y sus fallos de hoy por motivo. Los motivos son: «sin cuota diaria», «límite por minuto», «no disponible con esta clave», «saturado», «sin respuesta» y «error <código>». Si no se pueden listar los modelos, se avisa y se ven solo los que se han usado hoy.
+  - **Apps con IA:** las que han usado la IA hoy, de más a menos usos: nombre de la app (o «(borrada)»), dueño y «N de 30».
+  - **Construcciones:** los usuarios que han construido hoy, de más a menos: «N de 10». El admin no cuenta.
+- **Días anteriores:** los 14 últimos días con registro, del más reciente al más antiguo: llamadas por papel, fallos y construcciones.
+- Los días son días UTC, igual que los límites diarios: en España empiezan a la 1:00 (2:00 en verano). Se indica en la página.
+- Si no se pueden leer los días anteriores: «No hemos podido leer los días anteriores. Inténtalo de nuevo en un rato.»
+
 ## 6. Flujo del usuario
 
 1. El usuario entra con su nombre y PIN, o como invitado.
@@ -138,7 +153,7 @@
    - Al terminar de construir la app, el usuario sigue en el chat con el mensaje «¡Tu aplicación <nombre> está lista!» y el menú ya muestra el nombre. Al borrarla, vuelve al chat y el menú vuelve a «Inicio».
 4. Para crear o modificar su app, entra en **modo Analista**: describe lo que quiere y el sistema le hace preguntas hasta tener los requerimientos.
    - **Ideas de ejemplo:** si todavía no tiene app y el chat está vacío, aparecen cuatro botones con ideas del día a día de un docente: «📝 Corregir redacciones de idiomas», «🎲 Hacer grupos al azar», «❓ Un juego de preguntas para repasar» y «🧮 Calcular la nota media». Al pulsar uno, su texto se envía como primer mensaje al analista.
-5. El sistema le muestra los requerimientos en lenguaje sencillo (las etiquetas en negrita, cada una en su línea) y le pregunta si quiere empezar, avisando de que «Construirla tarda 1 o 2 minutos.»
+5. El sistema le muestra los requerimientos en lenguaje sencillo (las etiquetas en negrita, cada una en su línea) y le pregunta si quiere empezar, avisando de que «Construirla tarda 1 o 2 minutos.» y de cuántas veces más puede construirla hoy (sección 7, «Uso de la IA»).
 6. Al confirmar, el sistema construye la app y guarda una nueva versión.
 7. El usuario elige si su app es pública o privada (ver «Nombre, visibilidad y borrado de la app»).
 8. El usuario puede volver a una versión anterior de su app (ver «Versiones de la app»).
@@ -259,6 +274,7 @@
   - Si la rama no existe, se crea sola, a partir de la rama principal del repositorio, la primera vez que se guarda algo.
   - El código de las apps de los usuarios se lee de esta rama en el momento de ejecutarlas, no de los ficheros desplegados.
 - Cada usuario tiene **una carpeta `users/<hash del nombre>/`** en la rama `datos`. Dentro se guardan su cuenta (`user.json`: nombre, hash del PIN y fecha de registro), sus requisitos (`requisitos.md`), el código de su app (`app.py`) y los datos de la app (`app.json`: nombre, si es pública y la frase «Para qué sirve»).
+- Fuera de las carpetas de usuario, la carpeta `uso/` guarda el registro de uso de la IA, un fichero por día (ver «Registro de uso»).
 - En desarrollo (`STORAGE_MODE=local`) la misma estructura se guarda en la carpeta `.data/` del disco, que está fuera de git.
 - Cada guardado es un commit en la rama `datos`. Las versiones de cada app, en cambio, se guardan como ficheros propios (`users/<hash>/versiones/<fecha>.json`), para que funcionen igual en local y para listarlas con una sola llamada (ver «Versiones de la app»).
 - Si dos guardados coinciden y chocan, se reintenta.
@@ -284,7 +300,24 @@
 ### Uso de la IA
 - La elección del modelo y el cambio automático cuando falla se describen en la sección 4 («Elección del modelo»).
 - Una app se genera en una sola petición, para que todo su código salga del mismo modelo. Si esa petición falla, se repite entera con el siguiente modelo.
-- **Límite de construcciones:** cada usuario puede construir su app como mucho **10 veces al día** (cada pulsación de «¡Sí, adelante!» cuenta, salga bien o mal); el admin no tiene límite. Al llegar al tope: «Hoy ya has construido tu aplicación 10 veces, que es el máximo del día. Vuelve a intentarlo mañana.» El contador está en memoria y se reinicia si se reinicia el servidor. Los mensajes al analista no tienen límite.
+- **Límite de construcciones:** cada usuario puede construir su app como mucho **10 veces al día** (cada pulsación de «¡Sí, adelante!» cuenta, salga bien o mal); el admin no tiene límite. Al llegar al tope: «Hoy ya has construido tu aplicación 10 veces, que es el máximo del día. Vuelve a intentarlo mañana.» Se cuentan en el registro de uso, así que el límite se mantiene aunque se reinicie el servidor. Los mensajes al analista no tienen límite.
+- **Lo que queda, a la vista:** junto a «Construirla tarda 1 o 2 minutos.» se añade «Hoy puedes construirla N veces más.» («1 vez más» si queda una; con 0, al pulsar sale el mensaje del tope). El admin no lo ve.
+
+### Registro de uso
+- **Qué es:** un fichero por día (UTC) en la rama `datos`, `uso/<AAAA-MM-DD>.json`, con:
+  - `models`: llamadas por modelo y papel (`analista`, `desarrollador`, `apps`);
+  - `failures`: fallos por modelo y motivo;
+  - `resting`: modelos apartados, hasta cuándo y por qué;
+  - `apps`: usos de IA de cada app (por el hash de su dueño);
+  - `builds`: construcciones de cada usuario.
+- **Para qué:** los límites diarios (30 usos por app, 10 construcciones por usuario) y los modelos apartados lo leen, así que no se pierden al reiniciarse el servidor; y el admin lo ve en «Consumo».
+- **Cuándo se guarda**, para no hacer más lenta cada llamada a la IA:
+  - Lo nuevo se suma en memoria y se guarda como mucho cada 5 minutos, en la siguiente llamada (un commit «Uso de la IA del <fecha>»).
+  - Las construcciones se guardan al momento, y al terminar cada construcción se guardan también sus llamadas.
+  - Al guardar se vuelve a leer el fichero y se le **suma** lo nuevo: nunca se sobrescribe con cifras más pequeñas, aunque haya fallado una lectura anterior.
+- **Al arrancar** (o al cambiar de día) se lee el fichero del día y se sigue contando desde ahí. Los modelos que seguían apartados el día anterior siguen apartados.
+- **Si GitHub falla:** la IA sigue funcionando y lo nuevo se queda en memoria para el siguiente intento; el error va a los logs. Si el servidor se reinicia antes de guardar, se pierden como mucho los usos de esos últimos minutos (sección 11).
+- En local (`STORAGE_MODE=local`) se guarda en `.data/uso/`.
 
 ## 8. Restricciones
 
@@ -340,6 +373,10 @@ La app está bien si:
 - Una app cuyo código llama a `ia()` lleva la marca «Con IA» en «Apps públicas», en su página y en «Usuarios»; una que no la llama, no.
 - Mientras el analista piensa, y mientras se construye la app, se ve una frase de la lista de mensajes divertidos (sección 6); si la espera dura más de 3 segundos, la frase cambia, y no se repite ninguna hasta haber salido las 40.
 - Al terminar la espera (respuesta, app lista o error), la frase desaparece.
+- Debajo de una app con IA se ve cuántos usos le quedan hoy; tras usar la IA una vez, la cifra baja en uno en la misma pantalla.
+- Antes de construir, un usuario ve cuántas veces más puede hacerlo hoy; el admin no ve ese aviso.
+- El admin tiene la página «Consumo» con las llamadas de hoy por papel, el estado de cada modelo (con el motivo y la hora si está apartado), las apps con IA, las construcciones y los días anteriores; los usuarios y los invitados no la tienen.
+- Tras reiniciar el servidor, los usos de IA de cada app, las construcciones de cada usuario y los modelos apartados siguen como estaban (salvo los usos de los últimos 5 minutos sin guardar).
 - Se cumplen todos los casos límite de la tabla siguiente.
 
 ### Casos límite
@@ -391,6 +428,10 @@ Cada fila es un criterio de aceptación: la app está bien si, en ese caso, pasa
 | 32 | Leer una foto con faltas de ortografía | La IA la transcribe letra a letra, con sus errores, sin corregirlos al copiarla. | Foto con «Il fesait», «je va», «parceque»: el texto transcrito los conserva. |
 | 33 | El cliente pide algo que no se puede hacer de verdad (por ejemplo, leer una foto sin IA) | El analista lo avisa antes de escribir los requisitos; la app no lo simula ni rellena con textos de ejemplo, y dice en pantalla qué parte no está disponible. | Revisar que el código no tenga datos inventados. |
 | 34 | La respuesta de la IA no es el JSON esperado | La app muestra el texto de la IA tal cual con un aviso; nunca inventa valores (por ejemplo, una nota). | Forzar una respuesta que no sea JSON. |
+| **Registro de uso** | | | |
+| 37 | El servidor se reinicia (Streamlit Cloud duerme la app o se despliega una versión nueva) | Los límites del día siguen: una app con 30 usos o un usuario con 10 construcciones siguen en el tope, y los modelos sin cuota siguen apartados. | Llegar al tope, reiniciar el contenedor y volver a intentarlo. |
+| 38 | GitHub falla al guardar o leer el registro de uso | La IA sigue funcionando y nadie ve ningún error; lo nuevo se queda en memoria y se suma al fichero en el siguiente guardado, sin rebajar las cifras que ya tenía. El error va a los logs. | Con la lectura fallando, usar la IA y después guardar: el fichero tiene lo de antes más lo nuevo. |
+| 39 | Cambia el día (medianoche UTC) con el servidor encendido | Lo pendiente se guarda en el fichero del día que acaba, los contadores empiezan de cero y los modelos que siguen apartados lo siguen estando. | Cambiar la fecha y comprobar los contadores. |
 
 ## 10. Fuera de alcance (por ahora)
 
@@ -405,15 +446,17 @@ Cada fila es un criterio de aceptación: la app está bien si, en ese caso, pasa
 - **Altura fija del marco:** si la IA se queda corta, parte de la app queda cortada o con scroll interno.
 - **Bucles infinitos al usar la app:** la prueba de arranque solo cubre la primera carga. Si el Python de una app entra en un bucle infinito al pulsar un botón, bloquea la sesión de quien la usa y gasta CPU del servidor hasta que se reinicia. Un bucle infinito en el JavaScript solo bloquea la pestaña de quien la usa, no el servidor.
 - **Construcción lenta:** construir una app puede tardar más de un minuto, sobre todo si varios modelos están saturados y hay que probar el siguiente.
-- **Cuota compartida:** las construcciones tienen límite (10 por usuario y día), pero los mensajes al analista no, y el contador está en memoria. Muchos usuarios a la vez podrían agotar la cuota gratuita del día; entonces aparece «Los astros no están alineados…».
-- **Cuota de la IA de las apps:** el límite de 30 usos al día por app está en memoria (se reinicia con el servidor) y muchas apps a la vez podrían agotar la cuota de los modelos ligeros. Entonces las apps con IA muestran «La IA no está disponible…», pero el Analista y el Desarrollador siguen funcionando, porque usan otros modelos.
+- **Cuota compartida:** las construcciones tienen límite (10 por usuario y día), pero los mensajes al analista no. Muchos usuarios a la vez podrían agotar la cuota gratuita del día; entonces aparece «Los astros no están alineados…». El admin lo ve venir en «Consumo», pero Yahoraque no sabe cuánta cuota queda en Google: solo lo que ha gastado.
+- **Cuota de la IA de las apps:** muchas apps a la vez podrían agotar la cuota de los modelos ligeros. Entonces las apps con IA muestran «La IA no está disponible…», pero el Analista y el Desarrollador siguen funcionando, porque usan otros modelos.
+- **Registro de uso aproximado:** si el servidor se reinicia antes del siguiente guardado, se pierden los usos de como mucho los últimos 5 minutos, así que una app o un usuario podrían pasarse un poco del límite ese día. Si dos servidores funcionaran a la vez, sus límites no se verían al momento (sí al guardar). Streamlit Cloud ejecuta uno solo.
+- **Límites en días UTC:** los límites diarios se reinician a medianoche UTC, que en España es la 1:00 (2:00 en verano), no a medianoche. La cuota diaria de Google tampoco se reinicia a medianoche de España.
 - **La IA de las apps se puede equivocar:** una corrección o una lectura de letra difícil pueden tener errores. Por eso las apps lo dicen («Qué no hará») y llevan la marca «Con IA».
 - **Historial de git:** al borrar una cuenta, sus versiones antiguas siguen en el historial del repositorio.
 - **Privacidad en la capa gratuita:** el proveedor de IA puede usar los datos enviados para entrenar sus modelos.
 - **Repositorio público (es una práctica de máster):** "privada" significa que la app no aparece ni se puede abrir desde Yahoraque, pero su código, su nombre y si es pública se pueden leer en GitHub. Además, el nombre de cada usuario se lee en claro en su `user.json`. El código de los guardarraíles también es público. Se avisa al usuario de que no ponga información sensible en su app.
 - **Sesión recordada:** quien use el mismo navegador entra como el último usuario durante 7 días, hasta que alguien pulse «Salir». Si alguien roba la cookie, puede entrar con ella hasta que caduque: no hay forma de cerrar a distancia la sesión de un usuario sin borrarlo.
 - **PIN corto:** un PIN de pocos dígitos se puede adivinar probando muchas combinaciones desde la pantalla de acceso. Para una práctica se acepta sin límite de intentos.
-- **Muchas llamadas a GitHub:** como los datos están en la rama `datos` y no en disco, cada lectura y cada guardado es una llamada a la API de GitHub, que tiene un límite por hora. Con muchos usuarios a la vez, o un admin con muchos usuarios en la lista, se puede llegar a ese límite.
+- **Muchas llamadas a GitHub:** como los datos están en la rama `datos` y no en disco, cada lectura y cada guardado es una llamada a la API de GitHub, que tiene un límite por hora. Con muchos usuarios a la vez, o un admin con muchos usuarios en la lista, se puede llegar a ese límite. El registro de uso añade como mucho un guardado cada 5 minutos más uno por construcción, y cada uno es un commit en la rama `datos`.
 
 ## 12. Por decidir
 
