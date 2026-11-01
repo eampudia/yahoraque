@@ -1,6 +1,6 @@
 {
   "apps": {
-    "b04e95d0b09d": 2
+    "b04e95d0b09d": 3
   },
   "builds": {
     "94aec9fbed98": 1
@@ -21,7 +21,7 @@
       "analista": 1
     },
     "gemini-3.5-flash-lite": {
-      "apps": 3
+      "apps": 4
     },
     "gemini-3.6-flash": {
       "analista": 3,
