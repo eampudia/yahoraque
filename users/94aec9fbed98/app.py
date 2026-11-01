@@ -16,9 +16,12 @@ HTML_CODE = """<!DOCTYPE html>
       --yq-navy: #1a237e;
       --yq-red: #e53935;
       --pico-primary: var(--yq-purple);
-      --pico-primary-background: var(--yq-purple);
       --pico-border-radius: 12px;
       --pico-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     body {
@@ -38,7 +41,6 @@ HTML_CODE = """<!DOCTYPE html>
       padding: 24px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
       border: 1px solid rgba(0, 0, 0, 0.05);
-      box-sizing: border-box;
     }
 
     .header-badge {
@@ -46,7 +48,7 @@ HTML_CODE = """<!DOCTYPE html>
       background-color: rgba(126, 87, 194, 0.12);
       color: var(--yq-purple);
       font-weight: 700;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       padding: 4px 12px;
       border-radius: 20px;
       margin-bottom: 8px;
@@ -64,45 +66,107 @@ HTML_CODE = """<!DOCTYPE html>
     }
 
     .subtitle {
-      color: #666;
+      color: #64748b;
       font-size: 0.95rem;
       margin-bottom: 20px;
       line-height: 1.4;
     }
 
-    /* Top stats bar */
+    /* Configuration controls */
+    .config-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--yq-navy);
+      margin-bottom: 6px;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 2px solid #cbd5e1;
+      background-color: #ffffff;
+      font-size: 0.95rem;
+      color: #1e293b;
+      font-weight: 600;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    select:focus {
+      border-color: var(--yq-purple);
+    }
+
+    /* Status Bar */
     .status-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: #f1f3f9;
-      padding: 10px 16px;
+      padding: 10px 14px;
       border-radius: 12px;
       margin-bottom: 16px;
       font-weight: 600;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
     .stat-box {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
     }
 
     .stat-value {
       color: var(--yq-purple);
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 800;
     }
 
-    /* Timer Progress */
+    .btn-restart-sm {
+      background: #e2e8f0;
+      border: none;
+      color: #475569;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-restart-sm:hover {
+      background: #cbd5e1;
+      color: #0f172a;
+    }
+
+    /* Timer Progress Bar */
     .timer-wrapper {
       width: 100%;
       height: 10px;
-      background-color: #e0e0e0;
+      background-color: #e2e8f0;
       border-radius: 10px;
       overflow: hidden;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .timer-bar {
@@ -117,7 +181,7 @@ HTML_CODE = """<!DOCTYPE html>
       background-color: var(--yq-red) !important;
     }
 
-    /* Question Box */
+    /* Question Card */
     .question-box {
       background: #fafbff;
       border: 2px solid #e2e8f0;
@@ -128,12 +192,12 @@ HTML_CODE = """<!DOCTYPE html>
     }
 
     .question-prompt {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: #64748b;
       margin-bottom: 8px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      font-weight: 600;
+      font-weight: 700;
     }
 
     .question-text {
@@ -164,7 +228,7 @@ HTML_CODE = """<!DOCTYPE html>
       border: 2px solid #e2e8f0;
       border-radius: 12px;
       padding: 14px 16px;
-      font-size: 1rem;
+      font-size: 0.98rem;
       font-weight: 600;
       text-align: left;
       cursor: pointer;
@@ -172,10 +236,7 @@ HTML_CODE = """<!DOCTYPE html>
       display: flex;
       align-items: center;
       gap: 10px;
-      box-shadow: none;
-      margin-bottom: 0;
       width: 100%;
-      box-sizing: border-box;
     }
 
     .opt-btn:hover:not(:disabled) {
@@ -196,6 +257,29 @@ HTML_CODE = """<!DOCTYPE html>
       font-size: 0.85rem;
       font-weight: 700;
       flex-shrink: 0;
+    }
+
+    /* Option Feedback States */
+    .opt-btn.correct {
+      background-color: #e8f5e9 !important;
+      border-color: var(--yq-green) !important;
+      color: #1b5e20 !important;
+    }
+
+    .opt-btn.incorrect {
+      background-color: #ffebee !important;
+      border-color: var(--yq-red) !important;
+      color: #b71c1c !important;
+    }
+
+    .opt-btn.correct .opt-letter {
+      background-color: var(--yq-green);
+      color: white;
+    }
+
+    .opt-btn.incorrect .opt-letter {
+      background-color: var(--yq-red);
+      color: white;
     }
 
     /* Feedback Box */
@@ -234,29 +318,6 @@ HTML_CODE = """<!DOCTYPE html>
       line-height: 1.4;
     }
 
-    /* Option States */
-    .opt-btn.correct {
-      background-color: #e8f5e9 !important;
-      border-color: var(--yq-green) !important;
-      color: #1b5e20 !important;
-    }
-
-    .opt-btn.incorrect {
-      background-color: #ffebee !important;
-      border-color: var(--yq-red) !important;
-      color: #b71c1c !important;
-    }
-
-    .opt-btn.correct .opt-letter {
-      background-color: var(--yq-green);
-      color: white;
-    }
-
-    .opt-btn.incorrect .opt-letter {
-      background-color: var(--yq-red);
-      color: white;
-    }
-
     .action-btn {
       width: 100%;
       padding: 14px 20px;
@@ -278,6 +339,18 @@ HTML_CODE = """<!DOCTYPE html>
       transform: scale(0.99);
     }
 
+    .action-btn-secondary {
+      background-color: #ffffff;
+      color: #475569;
+      border: 2px solid #cbd5e1;
+      margin-top: 10px;
+    }
+
+    .action-btn-secondary:hover {
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+
     /* Screens */
     .screen {
       display: none;
@@ -290,21 +363,20 @@ HTML_CODE = """<!DOCTYPE html>
     /* Start Screen */
     .start-card {
       text-align: center;
-      padding: 10px 0;
     }
 
     .rules-list {
       text-align: left;
       background: #f8fafc;
-      padding: 16px 20px 16px 36px;
+      padding: 14px 18px 14px 34px;
       border-radius: 12px;
-      margin: 20px 0;
-      font-size: 0.95rem;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
       color: #334155;
     }
 
     .rules-list li {
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .rules-list li:last-child {
@@ -338,14 +410,14 @@ HTML_CODE = """<!DOCTYPE html>
     }
 
     .stat-card-label {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: #64748b;
       text-transform: uppercase;
       font-weight: 700;
     }
 
     .stat-card-val {
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       font-weight: 800;
       color: var(--yq-navy);
       margin-top: 4px;
@@ -361,18 +433,36 @@ HTML_CODE = """<!DOCTYPE html>
 
   <div class="app-card">
 
-    <!-- Pantalla 1: Inicio -->
+    <!-- Pantalla 1: Inicio y Configuración -->
     <div id="screen-start" class="screen active">
       <div class="start-card">
         <span class="header-badge">Gramática B2 • Francés</span>
-        <h1>Défi de Conjugaison</h1>
-        <p class="subtitle">Pon a prueba tu dominio del <strong>Presente de Indicativo</strong> en nivel B2. ¿Serás capaz de resolver las excepciones e irregulares a tiempo?</p>
+        <h1>Desafío de Francés B2</h1>
+        <p class="subtitle">Practica el <strong>Presente de Indicativo</strong> en nivel B2 adaptando el juego a tu ritmo de estudio.</p>
+
+        <div class="config-card">
+          <div class="form-group">
+            <label for="verb-type">📚 Tipo de verbos a practicar:</label>
+            <select id="verb-type">
+              <option value="all">Todos mezclados (Regulares, Irregulares y Excepciones)</option>
+              <option value="regular">Verbos regulares (-er, -ir con -iss-, -re regulares)</option>
+              <option value="irregular">Verbos irregulares y excepciones B2</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="game-mode">🎮 Modo de juego:</label>
+            <select id="game-mode">
+              <option value="timed">⏱️ Contra el reloj (15s por pregunta)</option>
+              <option value="untimed">🧘 Modo tranquilo (sin tiempo)</option>
+            </select>
+          </div>
+        </div>
 
         <ul class="rules-list">
-          <li>⏱️ Tienes <strong>15 segundos</strong> para responder cada pregunta.</li>
-          <li>🎯 Verbos de nivel B2: irregulares, cambios ortográficos y excepciones.</li>
-          <li>⚡ Ganas puntos extra por responder con rapidez.</li>
-          <li>💡 Recibe explicación gramatical inmediata tras cada intento.</li>
+          <li>🎯 Cuestionario personalizado de <strong>10 preguntas</strong>.</li>
+          <li>💡 Explicaciones gramaticales inmediatas para aprender de cada intento.</li>
+          <li>⚡ Puntos adicionales por velocidad en el modo con temporizador.</li>
         </ul>
 
         <button class="action-btn" onclick="startGame()">¡Empezar el Desafío!</button>
@@ -394,19 +484,20 @@ HTML_CODE = """<!DOCTYPE html>
           <span>Puntos:</span>
           <span id="score-counter" class="stat-value">0</span>
         </div>
+        <button class="btn-restart-sm" onclick="resetToMenu()" title="Cambiar opciones o reiniciar">🔄 Opciones</button>
       </div>
 
-      <div class="timer-wrapper">
+      <div id="timer-wrapper" class="timer-wrapper">
         <div id="timer-bar" class="timer-bar"></div>
       </div>
 
       <div class="question-box">
-        <div class="question-prompt">Completa la frase en presente:</div>
-        <p id="question-text" class="question-text">Nous (acquérir) _______ de nouvelles compétences.</p>
+        <div class="question-prompt">Completa la frase en presente de indicativo:</div>
+        <p id="question-text" class="question-text">Loading...</p>
       </div>
 
       <div id="options-container" class="options-grid">
-        <!-- Generado por JS -->
+        <!-- Generado dinámicamente -->
       </div>
 
       <div id="feedback-box" class="feedback-box">
@@ -442,102 +533,172 @@ HTML_CODE = """<!DOCTYPE html>
         </div>
 
         <button class="action-btn" onclick="startGame()">Volver a Jugar 🔄</button>
+        <button class="action-btn action-btn-secondary" onclick="resetToMenu()">⚙️ Cambiar opciones</button>
       </div>
     </div>
 
   </div>
 
   <script>
-    const QUESTIONS = [
+    const ALL_QUESTIONS = [
+      // REGULARES
       {
+        type: "regular",
+        sentence: "Chaque matin, nous _______ notre travail avec beaucoup d'enthousiasme. (finir)",
+        options: ["finissons", "finissons", "finissons", "finissons"], // fixed below
+        options: ["finissons", "finissons-nous", "finisons", "finissent"],
+        options: ["finissons", "finisons", "finissent", "finissez"],
+        correct: 0,
+        explanation: "Verbo regular de 2º grupo (-ir): toma el sufijo -iss- para las formas del plural (nous finissons)."
+      },
+      {
+        type: "regular",
+        sentence: "Vous _______ à toutes les questions posées par le professeur. (répondre)",
+        options: ["répondez", "répondissez", "répondez-vous", "répondons"],
+        correct: 0,
+        explanation: "Verbo regular en -dre: en presente la 2ª persona del plural toma la terminación regular -ez (vous répondez)."
+      },
+      {
+        type: "regular",
+        sentence: "Elles _______ de précieux conseils à leurs collègues de travail. (fournir)",
+        options: ["fournissent", "fournient", "fournisent", "fournissent-elles"],
+        correct: 0,
+        explanation: "Verbo de 2º grupo (-ir): en 3ª persona del plural toma -issent (elles fournissent)."
+      },
+      {
+        type: "regular",
+        sentence: "Nous _______ la réponse officielle de l'administration avant vendredi. (attendre)",
+        options: ["attendons", "attendissons", "attendons-nous", "attendant"],
+        correct: 0,
+        explanation: "Verbo regular en -re (attendre): las terminaciones de plural son -ons, -ez, -ent (nous attendons)."
+      },
+      {
+        type: "regular",
+        sentence: "Tu _______ un nouveau projet de recherche cet après-midi. (préparer)",
+        options: ["prépares", "prépare", "préparera", "préparis"],
+        correct: 0,
+        explanation: "Verbo regular de 1er grupo (-er): la 2ª persona del singular (tu) siempre termina en -es (tu prépares)."
+      },
+      {
+        type: "regular",
+        sentence: "Il _______ toujours ses engagements professionnels à la lettre. (respecter)",
+        options: ["respecte", "respectes", "respectit", "respectent"],
+        correct: 0,
+        explanation: "Verbo regular del 1er grupo (-er): la 3ª persona del singular (il/elle) termina en -e (il respecte)."
+      },
+      {
+        type: "regular",
+        sentence: "Les étudiants _______ attentivement le discours du directeur. (écouter)",
+        options: ["écoutent", "écoutent-ils", "écoutes", "écoutons"],
+        correct: 0,
+        explanation: "Verbo del 1er grupo: la 3ª persona del plural toma la terminación muda -ent (ils écoutent)."
+      },
+      {
+        type: "regular",
+        sentence: "Vous _______ la situation économique avec beaucoup de calme. (analyser)",
+        options: ["analysez", "analysiez", "analysons", "analysent"],
+        correct: 0,
+        explanation: "Verbo regular del 1er grupo (-er): la 2ª persona del plural (vous) termina en -ez (vous analysez)."
+      },
+      {
+        type: "regular",
+        sentence: "Le comité _______ de nouvelles règles de sécurité pour l'usine. (établir)",
+        options: ["établit", "établit-il", "établisse", "établi"],
+        correct: 0,
+        explanation: "Verbo regular de 2º grupo (-ir): el singular hace -is, -is, -it (il établit)."
+      },
+      {
+        type: "regular",
+        sentence: "Est-ce que tu _______ le bruit du train qui approche au loin ? (entendre)",
+        options: ["entends", "entend", "entendes", "entendiss"],
+        correct: 0,
+        explanation: "Verbos regulares en -re: forman el singular en -s, -s, - (je/tu entends, il entend)."
+      },
+
+      // IRREGULARES Y EXCEPCIONES B2
+      {
+        type: "irregular",
         sentence: "Nous _______ de nouvelles compétences chaque jour. (acquérir)",
         options: ["acquérons", "acquiérons", "acquissons", "acquirons"],
         correct: 0,
         explanation: "Le verbe 'acquérir' prend un accent grave sur le 'e' sauf aux 1re et 2e personnes du pluriel : nous acquérons, vous acquérez."
       },
       {
-        sentence: "Tu _______ ce problème mathématique avec facilité. (résoudre)",
-        options: ["résouds", "résous", "résolves", "résout"],
-        correct: 1,
+        type: "irregular",
+        sentence: "Tu _______ ce problème mathématique complexe avec facilité. (résoudre)",
+        options: ["résous", "résouds", "résolves", "résout"],
+        correct: 0,
         explanation: "Les verbes en -soudre (résoudre, dissoudre) font leur terminaison en -s, -s, -t au singulier : je résous, tu résous, il résout."
       },
       {
-        sentence: "Ils _______ les clients avec des arguments solides. (convaincre)",
-        options: ["convaincent", "convainctionnent", "convainquent", "convainces"],
-        correct: 2,
-        explanation: "Le verbe 'convaincre' prend 'qu' au pluriel : nous convainquons, vous convainquez, ils convainquent."
+        type: "irregular",
+        sentence: "Ils _______ les clients avec des arguments particulièrement solides. (convaincre)",
+        options: ["convainquent", "convainctionnent", "convaincent", "convainces"],
+        correct: 0,
+        explanation: "Le verbe 'convaincre' prend 'qu' devant les voyelles au pluriel : nous convainquons, vous convainquez, ils convainquent."
       },
       {
+        type: "irregular",
         sentence: "Vous _______ dans la salle d'attente s'il vous plaît. (s'asseoir)",
         options: ["vous asseyez", "vous assisez", "vous asseoiriez", "vous assiez"],
         correct: 0,
-        explanation: "Le verbe 's'asseoir' a deux formes usuelles au présent. La plus courante : je m'assieds... vous vous asseyez."
+        explanation: "Le verbe 's'asseoir' a deux formes usuelles au présent. La plus courante en B2 : je m'assieds... vous vous asseyez."
       },
       {
-        sentence: "Le meunier _______ le grain pour faire de la farine. (moudre)",
+        type: "irregular",
+        sentence: "Le meunier _______ le grain traditionnel pour faire de la farine. (moudre)",
         options: ["moud", "mous", "moue", "moudt"],
         correct: 0,
         explanation: "Au présent : je mouds, tu mouds, il moud, nous moulons, vous moulez, ils moulent."
       },
       {
+        type: "irregular",
         sentence: "Ils _______ la preuve au dossier de candidature. (joindre)",
-        options: ["joindent", "joincent", "joignent", "joingnent"],
-        correct: 2,
+        options: ["joignent", "joincent", "joindent", "joingnent"],
+        correct: 0,
         explanation: "Les verbes en -eindre, -aindre, -oindre gardent 'gn' devant les voyelles au pluriel : ils joignent."
       },
       {
-        sentence: "Elle _______ les détails de loin grâce à sa vue. (apercevoir)",
-        options: ["aperceve", "aperçoit", "apercevoit", "aperçoive"],
-        correct: 1,
+        type: "irregular",
+        sentence: "Elle _______ les détails de loin grâce à sa vue excellente. (apercevoir)",
+        options: ["aperçoit", "aperceve", "apercevoit", "aperçoive"],
+        correct: 0,
         explanation: "Apercevoir prend une cédille devant le 'o' au singulier : j'aperçois, tu aperçois, elle aperçoit."
       },
       {
+        type: "irregular",
         sentence: "Nous _______ les murs de la cuisine en bleu marine. (peindre)",
         options: ["peignons", "peindrons", "peintons", "peignissons"],
         correct: 0,
         explanation: "Pour les verbes en -eindre comme peindre : nous peignons, vous peignez, ils peignent."
       },
       {
-        sentence: "Il _______ le silence avec une réponse inattendue. (rompre)",
-        options: ["romp", "rompe", "rompt", "rompit"],
-        correct: 2,
-        explanation: "Le verbe 'rompre' garde son 't' à la 3e personne du singulier au présent : il rompt."
+        type: "irregular",
+        sentence: "Il _______ le silence avec une réponse totalement inattendue. (rompre)",
+        options: ["rompt", "romp", "rompe", "rompit"],
+        correct: 0,
+        explanation: "Le verbe 'rompre' conserve son 't' à la 3e personne du singulier au présent : il rompt."
       },
       {
+        type: "irregular",
         sentence: "Vous _______ l'injustice sous toutes ses formes. (haïr)",
-        options: ["haïez", "haïssez", "haïtes", "haïssons"],
-        correct: 1,
+        options: ["haïssez", "haïez", "haïtes", "haïssons"],
+        correct: 0,
         explanation: "Le tréma de 'haïr' disparaît au singulier (je hais) mais réapparaît au pluriel avec le suffixe -iss- : vous haïssez."
       },
       {
+        type: "irregular",
         sentence: "Les enfants _______ des fleurs sauvages dans le parc. (cueillir)",
-        options: ["cueillissent", "cueillent", "cueillon", "cueilleront"],
-        correct: 1,
+        options: ["cueillent", "cueillissent", "cueillon", "cueilleront"],
+        correct: 0,
         explanation: "Bien que du 3e groupe, 'cueillir' se conjugue au présent comme un verbe du 1er groupe (-e, -es, -e, -ons, -ez, -ent)."
       },
       {
+        type: "irregular",
         sentence: "Elles _______ de voter lors du premier tour. (s'abstenir)",
         options: ["s'abstiennent", "s'abstenent", "s'abstenissent", "s'abstienent"],
         correct: 0,
         explanation: "Comme 'venir', les verbes en -tenir prennent 'ienne' à la 3e personne du pluriel : elles s'abstiennent."
-      },
-      {
-        sentence: "Tu _______ ce contrat sans la moindre hésitation. (conclure)",
-        options: ["conclues", "concluds", "conclus", "concluz"],
-        correct: 2,
-        explanation: "Les verbes en -clure se conjuguent au présent : je conclus, tu conclus, il conclut."
-      },
-      {
-        sentence: "Ce moteur _______ les pales de la grande éolienne. (mouvoir)",
-        options: ["meut", "mouve", "moud", "meus"],
-        correct: 0,
-        explanation: "'Mouvoir' devient 'meut' à la 3e personne du singulier au présent de l'indicatif : il meut."
-      },
-      {
-        sentence: "Le champion _______ tous ses rivaux avec facilité. (vaincre)",
-        options: ["vainque", "vainct", "vainc", "vaince"],
-        correct: 2,
-        explanation: "À la 3e personne du singulier de 'vaincre', le 'c' demeure sans 't' : il vainc."
       }
     ];
 
@@ -553,9 +714,15 @@ HTML_CODE = """<!DOCTYPE html>
     let timer = null;
     let timeLeft = TIME_PER_QUESTION;
     let isAnswered = false;
+    let isTimedMode = true;
 
     function shuffle(array) {
-      return [...array].sort(() => Math.random() - 0.5);
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
     }
 
     function showScreen(id) {
@@ -563,8 +730,31 @@ HTML_CODE = """<!DOCTYPE html>
       document.getElementById(id).classList.add('active');
     }
 
+    function resetToMenu() {
+      if (timer) clearInterval(timer);
+      showScreen('screen-start');
+    }
+
     function startGame() {
-      currentQuestions = shuffle(QUESTIONS).slice(0, MAX_QUESTIONS);
+      const verbFilter = document.getElementById('verb-type').value;
+      const gameMode = document.getElementById('game-mode').value;
+
+      isTimedMode = (gameMode === 'timed');
+
+      let filtered = ALL_QUESTIONS;
+      if (verbFilter === 'regular') {
+        filtered = ALL_QUESTIONS.filter(q => q.type === 'regular');
+      } else if (verbFilter === 'irregular') {
+        filtered = ALL_QUESTIONS.filter(q => q.type === 'irregular');
+      }
+
+      currentQuestions = shuffle(filtered).slice(0, MAX_QUESTIONS);
+      
+      // Fallback if not enough questions in filter
+      if (currentQuestions.length < MAX_QUESTIONS) {
+        currentQuestions = shuffle(ALL_QUESTIONS).slice(0, MAX_QUESTIONS);
+      }
+
       currentIndex = 0;
       score = 0;
       streak = 0;
@@ -584,26 +774,37 @@ HTML_CODE = """<!DOCTYPE html>
       document.getElementById('streak-counter').textContent = `🔥 ${streak}`;
       document.getElementById('question-text').textContent = q.sentence;
 
+      // Prepare options with a shuffled copy while keeping track of correct index
+      const shuffledOpts = q.options.map((opt, idx) => ({ text: opt, isCorrect: idx === q.correct }));
+      const shuffledList = shuffle(shuffledOpts);
+
       const container = document.getElementById('options-container');
       container.innerHTML = '';
 
       const letters = ['A', 'B', 'C', 'D'];
-      q.options.forEach((opt, idx) => {
+      shuffledList.forEach((item, idx) => {
         const btn = document.createElement('button');
         btn.className = 'opt-btn';
-        btn.onclick = () => selectOption(idx);
-        btn.innerHTML = `<span class="opt-letter">${letters[idx]}</span><span>${opt}</span>`;
+        btn.dataset.isCorrect = item.isCorrect;
+        btn.onclick = () => selectOption(btn, item.isCorrect);
+        btn.innerHTML = `<span class="opt-letter">${letters[idx]}</span><span>${item.text}</span>`;
         container.appendChild(btn);
       });
 
       document.getElementById('feedback-box').style.display = 'none';
       document.getElementById('next-btn').style.display = 'none';
 
-      startTimer();
+      const timerWrapper = document.getElementById('timer-wrapper');
+      if (isTimedMode) {
+        timerWrapper.style.display = 'block';
+        startTimer();
+      } else {
+        timerWrapper.style.display = 'none';
+      }
     }
 
     function startTimer() {
-      clearInterval(timer);
+      if (timer) clearInterval(timer);
       timeLeft = TIME_PER_QUESTION;
       updateTimerBar();
 
@@ -636,27 +837,31 @@ HTML_CODE = """<!DOCTYPE html>
       }
     }
 
-    function selectOption(index) {
+    function selectOption(selectedBtn, isCorrect) {
       if (isAnswered) return;
       isAnswered = true;
-      clearInterval(timer);
+      if (isTimedMode && timer) clearInterval(timer);
 
       const q = currentQuestions[currentIndex];
       const buttons = document.querySelectorAll('.opt-btn');
-      buttons.forEach(btn => btn.disabled = true);
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.dataset.isCorrect === 'true') {
+          btn.classList.add('correct');
+        }
+      });
 
-      const isCorrect = index === q.correct;
       const feedbackBox = document.getElementById('feedback-box');
       const feedbackTitle = document.getElementById('feedback-title');
       const feedbackExp = document.getElementById('feedback-exp');
 
       if (isCorrect) {
-        buttons[index].classList.add('correct');
+        selectedBtn.classList.add('correct');
         streak++;
         if (streak > maxStreak) maxStreak = streak;
         correctCount++;
 
-        const timeBonus = Math.round(timeLeft * 10);
+        const timeBonus = isTimedMode ? Math.round(timeLeft * 10) : 0;
         const streakBonus = (streak > 1) ? streak * 15 : 0;
         const ptsGained = 100 + timeBonus + streakBonus;
         score += ptsGained;
@@ -664,8 +869,7 @@ HTML_CODE = """<!DOCTYPE html>
         feedbackBox.className = 'feedback-box feedback-correct';
         feedbackTitle.innerHTML = `✅ ¡Correcto! (+${ptsGained} pts)`;
       } else {
-        buttons[index].classList.add('incorrect');
-        buttons[q.correct].classList.add('correct');
+        selectedBtn.classList.add('incorrect');
         streak = 0;
 
         feedbackBox.className = 'feedback-box feedback-incorrect';
@@ -687,8 +891,12 @@ HTML_CODE = """<!DOCTYPE html>
 
       const q = currentQuestions[currentIndex];
       const buttons = document.querySelectorAll('.opt-btn');
-      buttons.forEach(btn => btn.disabled = true);
-      buttons[q.correct].classList.add('correct');
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.dataset.isCorrect === 'true') {
+          btn.classList.add('correct');
+        }
+      });
 
       streak = 0;
       document.getElementById('streak-counter').textContent = `🔥 ${streak}`;
@@ -745,4 +953,4 @@ HTML_CODE = """<!DOCTYPE html>
 </html>
 """
 
-st.components.v1.html(HTML_CODE, height=820)
+st.components.v1.html(HTML_CODE, height=850)
