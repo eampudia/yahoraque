@@ -160,6 +160,7 @@
    - Al terminar de construir la app, el usuario sigue en el chat con el mensaje «¡Tu aplicación <nombre> está lista!» y el menú ya muestra el nombre. Al borrarla, vuelve al chat y el menú vuelve a «Inicio».
 4. Para crear o modificar su app, entra en **modo Analista**: describe lo que quiere y el sistema le hace preguntas hasta tener los requerimientos.
    - **Ideas de ejemplo:** si todavía no tiene app y el chat está vacío, aparecen cuatro botones con ideas del día a día de un docente: «📝 Corregir redacciones de idiomas», «🎲 Hacer grupos al azar», «❓ Un juego de preguntas para repasar» y «🧮 Calcular la nota media». Al pulsar uno, su texto se envía como primer mensaje al analista.
+   - **Aviso de IA:** en el chat del Analista (al crear la app y al cambiarla), siempre, encima del cuadro para escribir y después de los mensajes, se ve en gris con un icono de información: «El analista es una inteligencia artificial y puede cometer errores. Revisa los requisitos antes de confirmar la construcción.» No sale en las demás páginas.
 5. El sistema le muestra los requerimientos en lenguaje sencillo (las etiquetas en negrita, cada una en su línea) y le pregunta si quiere empezar, avisando de que «Construirla tarda 1 o 2 minutos.» y de cuántas veces más puede construirla hoy (sección 7, «Uso de la IA»).
 6. Al confirmar, el sistema construye la app y guarda una nueva versión.
 7. El usuario elige si su app es pública o privada (ver «Nombre, visibilidad y borrado de la app»).
@@ -360,6 +361,7 @@ La app está bien si:
 - Con 12 construcciones quedan 10 versiones (desaparecen las 2 más antiguas). Al borrar la app se borran también sus versiones.
 - Un usuario puede borrar su app (su cuenta sigue y puede crear otra) y su propia cuenta: tras «Borrar mi cuenta», ve la pantalla de acceso con «Tu cuenta se ha borrado.» y ya no puede entrar con su nombre y PIN.
 - Un usuario nuevo ve las cuatro ideas de ejemplo en el chat vacío; al pulsar una, el analista responde a ese texto.
+- En el chat del Analista se ve el aviso «El analista es una inteligencia artificial y puede cometer errores…», con el chat vacío y con mensajes; en «Apps públicas» y en la página de una app, no.
 - Con una app ya creada, al pedir un cambio en el chat, el analista no vuelve a preguntar lo que ya estaba en los requisitos, y los requisitos nuevos conservan todo lo anterior que no se ha pedido cambiar.
 - Una app recién construida tiene un nombre de una sola palabra, solo letras, de 20 como mucho, y lo conserva al cambiarla desde el chat.
 - Una app nueva es privada: un invitado no la ve en «Apps públicas» (y su enlace se comporta como en el caso límite 22).
