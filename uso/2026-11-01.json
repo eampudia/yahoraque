@@ -1,11 +1,42 @@
 {
-  "apps": {},
+  "apps": {
+    "b04e95d0b09d": 2
+  },
   "builds": {},
-  "failures": {},
-  "models": {
-    "gemini-3.5-flash-lite": {
-      "apps": 1
+  "failures": {
+    "gemini-3.6-flash": {
+      "saturado": 1
+    },
+    "gemini-3.7-flash": {
+      "saturado": 2
+    },
+    "gemini-3.8-flash": {
+      "saturado": 2
     }
   },
-  "resting": {}
+  "models": {
+    "gemini-3.5-flash": {
+      "analista": 1
+    },
+    "gemini-3.5-flash-lite": {
+      "apps": 2
+    },
+    "gemini-3.6-flash": {
+      "analista": 1
+    }
+  },
+  "resting": {
+    "gemini-3.6-flash": {
+      "reason": "saturado",
+      "until": 1793556686.1861024
+    },
+    "gemini-3.7-flash": {
+      "reason": "saturado",
+      "until": 1793556683.685316
+    },
+    "gemini-3.8-flash": {
+      "reason": "saturado",
+      "until": 1793561591.0170615
+    }
+  }
 }
