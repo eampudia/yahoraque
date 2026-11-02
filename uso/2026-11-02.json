@@ -4,6 +4,12 @@
     "ff06535ac102": 1
   },
   "failures": {
+    "gemini-3.5-flash": {
+      "saturado": 1
+    },
+    "gemini-3.6-flash": {
+      "saturado": 1
+    },
     "gemini-3.7-flash": {
       "saturado": 1
     },
@@ -12,11 +18,22 @@
     }
   },
   "models": {
+    "gemini-3.5-flash-lite": {
+      "desarrollador": 1
+    },
     "gemini-3.6-flash": {
       "analista": 3
     }
   },
   "resting": {
+    "gemini-3.5-flash": {
+      "reason": "saturado",
+      "until": 1793646677.1716132
+    },
+    "gemini-3.6-flash": {
+      "reason": "saturado",
+      "until": 1793646670.811543
+    },
     "gemini-3.7-flash": {
       "reason": "saturado",
       "until": 1793646578.2298114
