@@ -1,0 +1,7 @@
+{
+  "name": "Cienquiz",
+  "public": false,
+  "description": "Un juego de preguntas y respuestas sobre ciencia con tiempo l\u00edmite para repasar en clase de forma divertida.",
+  "version": "20261102T190629314450Z",
+  "uses_ai": false
+}
