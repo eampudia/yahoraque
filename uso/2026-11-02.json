@@ -1,13 +1,26 @@
 {
   "apps": {},
-  "builds": {},
+  "builds": {
+    "ff06535ac102": 1
+  },
   "failures": {
+    "gemini-3.7-flash": {
+      "saturado": 1
+    },
     "gemini-3.8-flash": {
       "saturado": 1
     }
   },
-  "models": {},
+  "models": {
+    "gemini-3.6-flash": {
+      "analista": 3
+    }
+  },
   "resting": {
+    "gemini-3.7-flash": {
+      "reason": "saturado",
+      "until": 1793646578.2298114
+    },
     "gemini-3.8-flash": {
       "reason": "saturado",
       "until": 1793646568.2230942
