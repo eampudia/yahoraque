@@ -87,7 +87,7 @@
 |---|---|---|---|
 | Ver el listado de apps públicas | Sí | Sí | Sí |
 | Usar una app pública | Sí | Sí | Sí |
-| Crear o modificar una app | No | Sí, solo la suya | Sí |
+| Crear o modificar una app | No | Sí, solo la suya | Sí: la suya y la de cualquier usuario (desde «Usuarios») |
 | Hacer pública o privada una app | No | Sí, solo la suya | Sí, cualquiera |
 | Ver una app privada | No | Solo la suya | Sí |
 | Borrar una app | No | Sí, solo la suya | Solo junto con su usuario |
@@ -133,6 +133,12 @@
 - **Último acceso:** se guarda en su `user.json` (`last_access`) al registrarse, al entrar con su nombre y PIN y al volver con la sesión recordada. Para que cada recarga no sea una escritura en GitHub, solo se actualiza si el guardado tiene más de 1 hora; por eso la hora puede ir hasta 1 hora por detrás. Si no se puede guardar, el usuario entra igual y el error va a los logs. Los usuarios que no han entrado desde que existe este dato muestran «—».
 - **Detalle:** al pulsar un nombre se abre su ficha en la misma página: «Todos los usuarios» (para volver a la lista), su nombre, «Registrado el … · último acceso el …», el nombre de su aplicación, el interruptor «Pública», la aplicación funcionando y sus requisitos (desplegables). Si no tiene: «Todavía no tiene aplicación».
 - **Publicar u ocultar:** con el interruptor «Pública» el admin puede hacer pública o privada la app de cualquier usuario, igual que su dueño desde la página de su app. El cambio se guarda al momento, aparece o desaparece de «Apps públicas», y el dueño lo ve en su interruptor. Si no se puede guardar, el interruptor vuelve a su posición anterior y se muestra «No hemos podido cambiarlo. Inténtalo de nuevo en un rato.»
+- **Cambiar su aplicación:** en la ficha de un usuario con app, debajo del interruptor «Pública», el admin tiene el botón «Cambiar su aplicación». Solo lo tiene el admin, porque solo él tiene la página «Usuarios».
+  - Abre en la misma página el chat del Analista sobre esa app: «Volver a <nombre>» (vuelve a la ficha), el título «Cambiar <app>, de <usuario>», el desplegable «Lo que pidió <usuario>» con sus requisitos, el saludo «¡Hola! Vas a cambiar <app>, la aplicación de <usuario>. Cuéntame qué quieres cambiar o añadir.» y el aviso de IA.
+  - Funciona igual que el chat del dueño: el analista parte de los requisitos actuales y solo pregunta por el cambio; al confirmar, se construye y se guarda **en la carpeta del usuario** como una versión nueva, que el dueño ve en «Versiones» y puede deshacer restaurando la anterior. El nombre y la visibilidad no cambian. Al terminar: «¡<app> está lista! <usuario> ya la tiene con el cambio, como una versión nueva.»
+  - Las construcciones del admin no tienen límite diario y se cuentan a nombre del admin, no del usuario.
+  - Esta conversación se guarda aparte de la del admin con su propia app: no se mezclan.
+  - Al volver a «Usuarios» desde el menú o al pulsar «Todos los usuarios» se sale del chat.
 - **Borrado:** en esa página, «Borrar usuario» pide confirmación («Sí, borrar» / «Cancelar»). Al confirmar se elimina la carpeta del usuario entera (cuenta, requisitos y app) y desaparece de la lista. Con ese nombre se puede volver a registrar cualquiera.
 - Si falla la lectura o el borrado, se muestra un mensaje sencillo y el error real va a los logs.
 - La lista se guarda en memoria hasta 5 minutos para no hacer una llamada a GitHub por usuario en cada clic. Se refresca al momento cuando alguien se registra o se borra un usuario.
@@ -376,6 +382,7 @@ La app está bien si:
 - Al pulsar un usuario de la lista se ve su ficha con su aplicación funcionando; «Todos los usuarios» vuelve a la lista, y al volver a «Usuarios» desde el menú también se ve la lista.
 - Tras entrar con nombre y PIN, el último acceso de ese usuario en la lista es la hora de entrada; si vuelve a entrar en menos de 1 hora, no cambia.
 - El admin puede abrir cualquier usuario y ver su aplicación (pública o privada), su nombre y sus requisitos.
+- Desde la ficha de un usuario, el admin pulsa «Cambiar su aplicación», pide un cambio y confirma: la app del usuario es la nueva, con el mismo nombre y visibilidad, y en sus «Versiones» hay una más. La conversación del admin con su propia app sigue como estaba. Un usuario normal no tiene esta opción.
 - El admin puede hacer pública la app de otro usuario (un invitado la ve en «Apps públicas») y volver a hacerla privada (deja de verse).
 - Tras confirmar el borrado, el usuario desaparece de la lista, su carpeta ya no existe y no puede entrar con su nombre y PIN.
 - El código generado no consigue leer los secretos.
@@ -445,6 +452,9 @@ Cada fila es un criterio de aceptación: la app está bien si, en ese caso, pasa
 | 37 | El servidor se reinicia (Streamlit Cloud duerme la app o se despliega una versión nueva) | Los límites del día siguen: una app con 30 usos o un usuario con 10 construcciones siguen en el tope, y los modelos sin cuota siguen apartados. | Llegar al tope, reiniciar el contenedor y volver a intentarlo. |
 | 38 | GitHub falla al guardar o leer el registro de uso | La IA sigue funcionando y nadie ve ningún error; lo nuevo se queda en memoria y se suma al fichero en el siguiente guardado, sin rebajar las cifras que ya tenía. El error va a los logs. | Con la lectura fallando, usar la IA y después guardar: el fichero tiene lo de antes más lo nuevo. |
 | 39 | Cambia el día (medianoche UTC) con el servidor encendido | Lo pendiente se guarda en el fichero del día que acaba, los contadores empiezan de cero y los modelos que siguen apartados lo siguen estando. | Cambiar la fecha y comprobar los contadores. |
+| **Cambios del admin** | | | |
+| 40 | El admin cambia la app de un usuario que tiene abierto su chat en ese momento | **No se avisa al usuario** (riesgo asumido, sección 11): su app ya es la nueva, pero su chat guarda en la sesión los requisitos de antes. Si pide un cambio sin recargar, el analista parte de esos requisitos y puede deshacer el cambio del admin. Al recargar o volver a entrar ve los nuevos. | Con las dos sesiones abiertas, cambiar desde el admin y pedir un cambio desde el usuario. |
+| 41 | El usuario borra su app mientras el admin la está cambiando | Al volver a cargar la página, el admin sale del chat a la ficha, que dice «Todavía no tiene aplicación». | Borrarla desde la sesión del usuario y recargar la del admin. |
 
 ## 10. Fuera de alcance (por ahora)
 
@@ -465,6 +475,7 @@ Cada fila es un criterio de aceptación: la app está bien si, en ese caso, pasa
 - **Límites en días UTC:** los límites diarios se reinician a medianoche UTC, que en España es la 1:00 (2:00 en verano), no a medianoche. La cuota diaria de Google tampoco se reinicia a medianoche de España.
 - **La IA de las apps se puede equivocar:** una corrección o una lectura de letra difícil pueden tener errores. Por eso las apps lo dicen («Qué no hará») y llevan la marca «Con IA».
 - **Historial de git:** al borrar una cuenta, sus versiones antiguas siguen en el historial del repositorio.
+- **El admin cambia apps ajenas sin avisar:** el dueño no recibe ningún aviso, y en «Versiones» no se distingue qué versión hizo el admin. Si el dueño tenía el chat abierto, puede deshacer el cambio sin darse cuenta (caso límite 40). Se acepta porque hay un solo admin, el propietario de Yahoraque, y el dueño siempre puede restaurar su versión anterior.
 - **Privacidad en la capa gratuita:** el proveedor de IA puede usar los datos enviados para entrenar sus modelos.
 - **Repositorio público (es una práctica de máster):** "privada" significa que la app no aparece ni se puede abrir desde Yahoraque, pero su código, su nombre y si es pública se pueden leer en GitHub. Además, el nombre de cada usuario se lee en claro en su `user.json`. El código de los guardarraíles también es público. Se avisa al usuario de que no ponga información sensible en su app.
 - **Sesión recordada:** quien use el mismo navegador entra como el último usuario durante 7 días, hasta que alguien pulse «Salir». Si alguien roba la cookie, puede entrar con ella hasta que caduque: no hay forma de cerrar a distancia la sesión de un usuario sin borrarlo.

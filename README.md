@@ -29,7 +29,7 @@ Un docente (de primaria, secundaria, FP o academia) necesita a diario pequeñas 
 4. **La usas.** Tu app aparece en el menú con su nombre.
 5. **Con IA, si hace falta.** Tu app también puede usar IA: corregir o resumir textos, traducir o leer una foto (por ejemplo, una redacción manuscrita), con un límite de 30 usos al día. Esas apps llevan la marca «Con IA».
 6. **La compartes o la cambias.** La puedes hacer pública: aparece en «Apps públicas» y cualquiera la abre con un enlace, sin cuenta. Puedes pedir cambios en el chat (el analista ya conoce tu app), volver a cualquiera de sus 10 últimas versiones, borrarla y empezar otra, o borrar tu cuenta.
-7. **El admin** ve en «Usuarios» la lista de usuarios, con su fecha de registro, su último acceso y su app; al pulsar uno abre su app, las publica u oculta y puede borrar usuarios. En «Consumo» ve cuánta IA se gasta: llamadas de hoy por modelo y por papel, qué modelos están apartados y por qué, las apps con IA, las construcciones y los días anteriores.
+7. **El admin** ve en «Usuarios» la lista de usuarios, con su fecha de registro, su último acceso y su app; al pulsar uno abre su app, las publica u oculta, puede cambiarlas hablando con el analista («Cambiar su aplicación», se guarda como una versión nueva del usuario) y puede borrar usuarios. En «Consumo» ve cuánta IA se gasta: llamadas de hoy por modelo y por papel, qué modelos están apartados y por qué, las apps con IA, las construcciones y los días anteriores.
 
 ## La pieza de IA
 

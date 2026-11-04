@@ -380,11 +380,12 @@ def show_app(uid, meta=None):
     return True
 
 
-def saved_requirements(uid):
+def saved_requirements(uid, state=None):
     # Read once per session: in production each read is a GitHub API call.
-    if "saved_requirements" not in st.session_state:
-        st.session_state.saved_requirements = storage.read_file(apps.requirements_path(uid))
-    return st.session_state.saved_requirements
+    state = st.session_state if state is None else state
+    if "saved_requirements" not in state:
+        state["saved_requirements"] = storage.read_file(apps.requirements_path(uid))
+    return state["saved_requirements"]
 
 
 def requirements_markdown(requirements):
@@ -449,29 +450,45 @@ def build_app(uid, requirements):
 
 def analyst_page():
     user = st.session_state.user
-    saved = saved_requirements(user["id"])
     meta = app_meta(user["id"])
     st.title(f"Cambiar {meta['name']}" if meta else "Crea tu aplicación")
+    analyst_chat(user["id"], meta, st.session_state)
+
+
+def analyst_chat(uid, meta, state, owner_name=None):
+    """The chat with the analyst that creates or changes the app of `uid`.
+
+    state: where the chat lives; st.session_state for the user's own app.
+    owner_name: set when the admin changes another user's app; that chat
+    keeps its own state, so it does not mix with the admin's own app.
+    """
+    user = st.session_state.user
+    saved = saved_requirements(uid, state)
     if saved:
-        with st.expander("Lo que ya me pediste"):
+        with st.expander("Lo que ya me pediste" if owner_name is None else f"Lo que pidió {owner_name}"):
             show_requirements(saved)
     # Changes start from the app the user already has.
     current_app = {"name": meta["name"], "requirements": saved} if meta and saved else None
 
-    st.session_state.setdefault("chat", [])
-    st.chat_message("assistant").write(analyst.greeting(meta and meta["name"]))
-    for message in st.session_state.chat:
+    state.setdefault("chat", [])
+    greeting = (
+        analyst.greeting(meta and meta["name"]) if owner_name is None
+        else f"¡Hola! Vas a cambiar {meta['name']}, la aplicación de {owner_name}. "
+        "Cuéntame qué quieres cambiar o añadir."
+    )
+    st.chat_message("assistant").write(greeting)
+    for message in state["chat"]:
         st.chat_message(message["role"]).write(message["content"])
 
     example = None
-    if not meta and not st.session_state.chat:
+    if not meta and not state["chat"]:
         st.caption("¿No sabes por dónde empezar? Pulsa una idea o escribe la tuya:")
         columns = st.columns(2)
         for number, (label, idea) in enumerate(EXAMPLE_IDEAS):
             if columns[number % 2].button(label, key=f"idea_{number}", width="stretch"):
                 example = idea
 
-    pending = st.session_state.get("pending_requirements")
+    pending = state.get("pending_requirements")
     if pending:
         show_requirements(pending)
         st.write("¿Empezamos a construirla?")
@@ -483,47 +500,50 @@ def analyst_page():
         yes, change = st.columns(2)
         if yes.button("¡Sí, adelante!", type="primary", width="stretch"):
             if build_limit_reached(user):
-                st.session_state.build_result = "limit"
+                state["build_result"] = "limit"
                 st.rerun()
-            st.session_state.build_result = build_app(user["id"], pending)
-            if st.session_state.build_result == "ok":
-                st.session_state.saved_requirements = pending
-                st.session_state.chat = []
-                del st.session_state.pending_requirements
+            state["build_result"] = build_app(uid, pending)
+            if state["build_result"] == "ok":
+                state["saved_requirements"] = pending
+                state["chat"] = []
+                del state["pending_requirements"]
             st.rerun()
         if change.button("Quiero cambiar algo", width="stretch"):
-            del st.session_state.pending_requirements
-            st.session_state.chat.append(
-                {"role": "assistant", "content": "Claro, dime qué quieres cambiar."}
-            )
+            del state["pending_requirements"]
+            state["chat"].append({"role": "assistant", "content": "Claro, dime qué quieres cambiar."})
             st.rerun()
 
-    build_result = st.session_state.pop("build_result", None)
-    if build_result == "ok":
-        st.success(f"¡Tu aplicación {apps.load_meta(user['id'])['name']} está lista!")
+    build_result = state.pop("build_result", None)
+    if build_result == "ok" and owner_name is None:
+        st.success(f"¡Tu aplicación {apps.load_meta(uid)['name']} está lista!")
         st.page_link(home, label="Ver mi aplicación", icon=":material/arrow_forward:")
+    elif build_result == "ok":
+        st.success(
+            f"¡{apps.load_meta(uid)['name']} está lista! {owner_name} ya la tiene con el cambio, "
+            "como una versión nueva."
+        )
     elif build_result:
         st.error(BUILD_MESSAGES[build_result])
 
-    if st.session_state.pop("ai_failed", False):
+    if state.pop("ai_failed", False):
         st.error(ASTROS_MESSAGE)
 
     st.caption(f":material/info: {AI_DISCLAIMER}")
     prompt = st.chat_input("Escribe aquí…") or example
     if prompt:
-        st.session_state.pop("pending_requirements", None)
-        st.session_state.chat.append({"role": "user", "content": prompt})
+        state.pop("pending_requirements", None)
+        state["chat"].append({"role": "user", "content": prompt})
         st.chat_message("user").write(prompt)
         try:
-            text, requirements = waiting.run(analyst.reply, st.session_state.chat, current_app)
+            text, requirements = waiting.run(analyst.reply, state["chat"], current_app)
         except llm.AIUnavailable:
             # Rerun so the unanswered message also disappears from the screen.
-            st.session_state.chat.pop()
-            st.session_state.ai_failed = True
+            state["chat"].pop()
+            state["ai_failed"] = True
             st.rerun()
-        st.session_state.chat.append({"role": "assistant", "content": text})
+        state["chat"].append({"role": "assistant", "content": text})
         if requirements:
-            st.session_state.pending_requirements = requirements
+            state["pending_requirements"] = requirements
         st.rerun()
 
 
@@ -598,6 +618,10 @@ def users_page():
         users_list()
         return
 
+    if st.session_state.get("editing_user") == user["id"]:
+        change_user_app(user)
+        return
+
     if st.button("Todos los usuarios", icon=":material/arrow_back:", type="tertiary"):
         del st.session_state.selected_user
         st.session_state.pop("confirm_delete", None)
@@ -614,6 +638,9 @@ def users_page():
         ai_badge(meta)
     if meta:
         public_toggle(user["id"], meta)
+        if st.button("Cambiar su aplicación", icon=":material/edit:"):
+            st.session_state.editing_user = user["id"]
+            st.rerun()
     if not show_app(user["id"], meta):
         st.write("Todavía no tiene aplicación.")
     try:
@@ -650,6 +677,27 @@ def users_page():
     if cancel.button("Cancelar", width="stretch"):
         del st.session_state.confirm_delete
         st.rerun()
+
+
+def change_user_app(user):
+    """Only the admin: the analyst's chat on another user's app, from "Usuarios".
+
+    The build is saved in the user's folder as a new version, as if they had
+    asked for it; the name and the visibility do not change.
+    """
+    if st.session_state.user["role"] != auth.ROLE_ADMIN:
+        st.stop()
+    if st.button(f"Volver a {user['name']}", icon=":material/arrow_back:", type="tertiary"):
+        del st.session_state.editing_user
+        st.rerun()
+    meta = app_meta(user["id"])
+    if meta is None:
+        del st.session_state.editing_user
+        st.rerun()
+    st.header(f"Cambiar {meta['name']}, de {user['name']}")
+    analyst_chat(
+        user["id"], meta, st.session_state.setdefault(f"edit_{user['id']}", {}), owner_name=user["name"]
+    )
 
 
 def _sum_roles(models):
@@ -827,6 +875,7 @@ navigation = st.navigation(pages, position="hidden")
 # Coming to "Usuarios" from another page shows the list, not the last user opened.
 if navigation.url_path == USERS_URL_PATH and st.session_state.get("current_page") != USERS_URL_PATH:
     st.session_state.pop("selected_user", None)
+    st.session_state.pop("editing_user", None)
 st.session_state.current_page = navigation.url_path
 if shared_app and navigation.url_path != VIEW_URL_PATH:
     # Logging in from a shared link loses the page ("/app" becomes "/"): go back to it.
