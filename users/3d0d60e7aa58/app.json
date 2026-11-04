@@ -1,6 +1,6 @@
 {
   "name": "Onirica",
-  "public": false,
+  "public": true,
   "description": "Una experiencia interactiva y visual surrealista donde el usuario explora salas misteriosas, manipula objetos imposibles con el tacto y desbloquea secretos ocultos.",
   "version": "20261104T181959131717Z",
   "uses_ai": false
