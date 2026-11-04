@@ -1,5 +1,7 @@
 {
   "name": "Javijator",
   "public": true,
-  "description": "Una aplicaci\u00f3n divertida para inventar sinopsis y t\u00edtulos imposibles al estilo de Javier Calvo y Javier Ambrossi."
+  "description": "Una aplicaci\u00f3n divertida para inventar pel\u00edculas completas al estilo de Los Javis (t\u00edtulo, argumento, actores reales y canciones) usando inteligencia artificial.",
+  "version": "20261104T183151553222Z",
+  "uses_ai": true
 }
