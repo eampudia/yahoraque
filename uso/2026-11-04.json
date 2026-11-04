@@ -1,0 +1,16 @@
+{
+  "apps": {},
+  "builds": {},
+  "failures": {
+    "gemini-3.8-flash": {
+      "saturado": 1
+    }
+  },
+  "models": {},
+  "resting": {
+    "gemini-3.8-flash": {
+      "reason": "saturado",
+      "until": 1793816450.314936
+    }
+  }
+}
