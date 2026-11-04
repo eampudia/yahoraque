@@ -1,6 +1,6 @@
 {
   "apps": {
-    "1dcfd6f4f7e5": 1
+    "1dcfd6f4f7e5": 3
   },
   "builds": {
     "38049c3213a8": 1,
@@ -25,7 +25,7 @@
       "desarrollador": 1
     },
     "gemini-3.5-flash-lite": {
-      "apps": 2,
+      "apps": 4,
       "desarrollador": 1
     },
     "gemini-3.6-flash": {
