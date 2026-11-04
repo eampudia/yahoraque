@@ -14,7 +14,7 @@
       "saturado": 1
     },
     "gemini-3.8-flash": {
-      "saturado": 1
+      "saturado": 2
     }
   },
   "models": {
@@ -40,7 +40,7 @@
     },
     "gemini-3.8-flash": {
       "reason": "saturado",
-      "until": 1793816450.314936
+      "until": 1793817313.13683
     }
   }
 }
