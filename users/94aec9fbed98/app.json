@@ -3,5 +3,6 @@
   "public": true,
   "description": "Permite a los alumnos practicar las formas verbales del presente de indicativo en franc\u00e9s (nivel B2) mediante un juego individual personalizable con o sin tiempo, retroalimentaci\u00f3n al fallar y selecci\u00f3n de tipo de verbos.",
   "version": "20261101T193005466158Z",
-  "uses_ai": false
+  "uses_ai": false,
+  "slug": "verbio"
 }
