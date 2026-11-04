@@ -2,7 +2,9 @@
 
 Each user has at most one app, in users/<user_id>/:
 - app.py: its code.
-- app.json: {"name", "public", "description", "version", "uses_ai"}. Private by default.
+- app.json: {"name", "public", "description", "version", "uses_ai", "slug"}. Private by default.
+  "slug" is the app's address once it has been public (e.g. /redacpro): it is
+  given the first time and never changes, so shared links keep working.
 - requisitos.md: the requirements it was built from.
 - versiones/<id>.json: every build, {"created_at", "code", "requirements"},
   so the owner can go back to an older one. Only the last MAX_VERSIONS stay.
@@ -12,6 +14,7 @@ import ast
 import json
 import logging
 import re
+import unicodedata
 from datetime import datetime, timezone
 
 import streamlit as st
@@ -23,6 +26,12 @@ import storage
 
 DESCRIPTION_PATTERN = re.compile(r"^Para qué sirve:\s*(.+)$", re.MULTILINE)
 MAX_VERSIONS = 10
+# Addresses an app cannot take: Yahoraque's pages (see the *_URL_PATH in app.py)
+# and the paths Streamlit's server uses.
+RESERVED_SLUGS = {
+    "mi-app", "usuarios", "publicas", "app", "consumo",
+    "static", "media", "component", "healthz", "stcore", "vendor",
+}  # fmt: skip
 
 
 def app_path(uid):
@@ -119,6 +128,9 @@ def save(uid, code, requirements, name, public):
         "version": version_id,
         "uses_ai": code_uses_ai(code),
     }
+    slug = (load_meta(uid) or {}).get("slug")
+    if slug:
+        meta["slug"] = slug
     storage.write_file(app_path(uid), code, f"App {uid}")
     storage.write_file(meta_path(uid), json.dumps(meta, indent=2), f"App {uid}: datos")
     storage.write_file(requirements_path(uid), requirements, f"Requisitos {uid}")
@@ -144,8 +156,35 @@ def restore(uid, version_id):
 
 def set_public(uid, public):
     meta = {**load_meta(uid), "public": public}
+    if public and not meta.get("slug"):
+        meta["slug"] = slug_for(meta["name"], taken_slugs())
     storage.write_file(meta_path(uid), json.dumps(meta, indent=2), f"App {uid}: pública={public}")
     clear_caches()
+
+
+def slug_for(name, taken):
+    """The app's address from its name: «Redacpro» -> "redacpro".
+
+    In lowercase, without accents. If another app or a Yahoraque page already
+    has it, the first free of "redacpro-2", "redacpro-3"…
+    """
+    ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    base = re.sub(r"[^a-z0-9]+", "-", ascii_name.lower()).strip("-") or "app"
+    slug, number = base, 1
+    while slug in taken or slug in RESERVED_SLUGS:
+        number += 1
+        slug = f"{base}-{number}"
+    return slug
+
+
+def taken_slugs():
+    """Addresses already given to some app, public or not."""
+    taken = set()
+    for user in auth.list_users():
+        meta = load_meta(user["id"])
+        if meta and meta.get("slug"):
+            taken.add(meta["slug"])
+    return taken
 
 
 def delete(uid):
@@ -158,23 +197,44 @@ def delete(uid):
 
 @st.cache_data(ttl=300, show_spinner=False)
 def public_apps():
-    """Public apps sorted by name: [{"id", "name", "description"}].
+    """Public apps sorted by name: [{"id", "name", "description", "uses_ai", "slug"}].
 
-    Cached because on GitHub each user's app.json is one API call.
+    Cached because on GitHub each user's app.json is one API call. Public apps
+    from before addresses existed get theirs here, once.
     """
+    metas = {user["id"]: load_meta(user["id"]) for user in auth.list_users()}
+    taken = {meta["slug"] for meta in metas.values() if meta and meta.get("slug")}
     found = []
-    for user in auth.list_users():
-        meta = load_meta(user["id"])
-        if meta and meta.get("public"):
-            found.append(
-                {
-                    "id": user["id"],
-                    "name": meta["name"],
-                    "description": meta.get("description", ""),
-                    "uses_ai": meta.get("uses_ai", False),
-                }
-            )
-    return sorted(found, key=lambda app: app["name"].lower())
+    for uid, meta in sorted(metas.items(), key=lambda item: item[1]["name"].lower() if item[1] else ""):
+        if not (meta and meta.get("public")):
+            continue
+        if not meta.get("slug"):
+            meta = _give_slug(uid, meta, taken)
+        found.append(
+            {
+                "id": uid,
+                "name": meta["name"],
+                "description": meta.get("description", ""),
+                "uses_ai": meta.get("uses_ai", False),
+                "slug": meta.get("slug"),
+            }
+        )
+    return found
+
+
+def _give_slug(uid, meta, taken):
+    """Save an address for an app that has none. If it cannot, the app keeps its old link."""
+    slug = slug_for(meta["name"], taken)
+    try:
+        storage.write_file(
+            meta_path(uid), json.dumps({**meta, "slug": slug}, indent=2), f"App {uid}: dirección {slug}"
+        )
+    except Exception:
+        logging.exception("Saving the address of app %s failed", uid)
+        return meta
+    taken.add(slug)
+    load_meta.clear()
+    return {**meta, "slug": slug}
 
 
 def can_view(uid, viewer):
