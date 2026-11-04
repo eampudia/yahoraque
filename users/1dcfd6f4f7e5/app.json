@@ -1,5 +1,5 @@
 {
   "name": "Javijator",
-  "public": false,
+  "public": true,
   "description": "Una aplicaci\u00f3n divertida para inventar sinopsis y t\u00edtulos imposibles al estilo de Javier Calvo y Javier Ambrossi."
 }
