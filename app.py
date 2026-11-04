@@ -177,7 +177,7 @@ def home_page():
     public_toggle(user["id"], meta)
     if meta["public"]:
         st.caption(":material/share: Enlace para compartir (pulsa el icono de copiar):")
-        st.code(share_url(user["id"]), language=None)
+        st.code(share_url(user["id"], meta), language=None)
 
     show_app(user["id"], meta)
     # A classmate missed persistence because nothing on screen showed it.
@@ -252,14 +252,29 @@ def ai_badge(app):
         )
 
 
-def share_url(uid):
-    """Full address of an app's page, to copy and send.
+def share_url(uid, meta):
+    """Full address of an app's page, to copy and send, e.g. https://…/redacpro.
 
     Built from the domain only: on Streamlit Cloud the page runs inside an
-    iframe whose own path (/~/+/) should not end up in the link.
+    iframe whose own path (/~/+/) should not end up in the link. An app whose
+    address could not be saved keeps the old link.
     """
     address = urlsplit(st.context.url)
-    return f"{address.scheme}://{address.netloc}/{VIEW_URL_PATH}?app={uid}"
+    path = meta["slug"] if meta.get("slug") else f"{VIEW_URL_PATH}?app={uid}"
+    return f"{address.scheme}://{address.netloc}/{path}"
+
+
+def requested_slug():
+    """The last part of the address the browser opened, e.g. "redacpro"."""
+    return urlsplit(st.context.url).path.rstrip("/").rsplit("/", 1)[-1]
+
+
+def public_app_list():
+    try:
+        return apps.public_apps()
+    except Exception:
+        logging.exception("Listing public apps failed")
+        return []
 
 
 def is_public_app(uid):
@@ -336,7 +351,28 @@ def public_page():
             ai_badge(app)
             if app["description"]:
                 st.write(app["description"])
-            st.page_link(view_page, label="Abrir", icon=":material/arrow_forward:", query_params={"app": app["id"]})
+            if app["id"] in public_app_pages:
+                st.page_link(public_app_pages[app["id"]], label="Abrir", icon=":material/arrow_forward:")
+            else:
+                st.page_link(view_page, label="Abrir", icon=":material/arrow_forward:", query_params={"app": app["id"]})
+
+
+def public_app_page(uid):
+    """The page at a public app's own address, e.g. /redacpro."""
+
+    def page():
+        meta = app_meta(uid)
+        if not (meta and meta.get("public")):
+            # Hidden since the menu was built.
+            st.title("Aplicación no disponible")
+            st.write("Esta aplicación no existe o no es pública.")
+            st.page_link(public_list_page, label="Ver las apps públicas", icon=":material/explore:")
+            return
+        st.title(meta["name"])
+        ai_badge(meta)
+        show_app(uid, meta)
+
+    return page
 
 
 def app_view_page():
@@ -352,6 +388,9 @@ def app_view_page():
         st.write("Esta aplicación no existe o no es pública.")
         st.page_link(public_list_page, label="Ver las apps públicas", icon=":material/explore:")
         return
+    if uid in public_app_pages:
+        # Old links (?app=<id>) of a public app go to its own address.
+        st.switch_page(public_app_pages[uid])
     meta = apps.load_meta(uid)
     st.title(meta["name"])
     ai_badge(meta)
@@ -825,7 +864,11 @@ if not logged_out and (user is None or st.session_state.get("shared_guest")):
     if restored or browser_token is not None:
         st.session_state.shared_guest = False
 shared_app = st.query_params.get("app")
-if user is None and not logged_out and shared_app and is_public_app(shared_app):
+public_apps = public_app_list()
+opens_public_app = (shared_app and is_public_app(shared_app)) or (
+    user is None and requested_slug() in {app["slug"] for app in public_apps if app["slug"]}
+)
+if user is None and not logged_out and opens_public_app:
     # A link to a public app opens without logging in; this guest is not remembered.
     user = st.session_state.user = auth.guest()
     st.session_state.shared_guest = browser_token is None
@@ -856,6 +899,14 @@ public_list_page = st.Page(
 view_page = st.Page(
     app_view_page, title="Aplicación", url_path=VIEW_URL_PATH, visibility="hidden"
 )
+# Each public app at its own address (e.g. /redacpro), for everyone, not in the menu.
+public_app_pages = {
+    app["id"]: st.Page(
+        public_app_page(app["id"]), title=app["name"], url_path=app["slug"], visibility="hidden"
+    )
+    for app in public_apps
+    if app["slug"]
+}
 admin_users_page = st.Page(users_page, title="Usuarios", url_path=USERS_URL_PATH)
 admin_usage_page = st.Page(usage_page, title="Consumo", url_path=USAGE_URL_PATH)
 if is_guest:
@@ -866,9 +917,10 @@ else:
     pages = [my_app_page, public_list_page, view_page]
 if user["role"] == auth.ROLE_ADMIN:
     pages += [admin_users_page, admin_usage_page]
-# Reached from links, not from the menu: an app's page, and the chat to change
+pages += list(public_app_pages.values())
+# Reached from links, not from the menu: the apps' pages, and the chat to change
 # your app (its link is on the app's page).
-off_menu = [view_page, my_app_page] if my_app else [view_page]
+off_menu = [view_page, *public_app_pages.values()] + ([my_app_page] if my_app else [])
 # Our own menu, so the logo can go above it at a readable size
 # (st.logo is at most 32px high).
 navigation = st.navigation(pages, position="hidden")

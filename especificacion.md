@@ -183,8 +183,14 @@
   - Una app nueva es **privada**. Cambiar la app desde el chat no cambia su visibilidad.
   - En la página de su app, el dueño tiene el interruptor «Pública» («Aparece en «Apps públicas» y la puede usar cualquiera, también sin cuenta»).
   - **Apps públicas:** página del menú para todos. Para los invitados es la página de inicio. Muestra las apps públicas ordenadas por nombre, con su nombre, la frase «Para qué sirve» de sus requisitos y un enlace «Abrir». Si no hay: «Todavía no hay aplicaciones públicas.»
-  - **Página de cada app:** `/app?app=<hash del dueño>`.
-  - **Enlace para compartir:** cuando la app es pública, el dueño ve en la página de su app la dirección completa (por ejemplo `https://yahoraque.streamlit.app/app?app=<hash>`) en un recuadro con botón de copiar. Se construye con el dominio por el que se entra, sin la ruta interna del marco de Streamlit Cloud (`/~/+/`).
+  - **Dirección de cada app pública:** el nombre de la app justo después del dominio, por ejemplo `https://yahoraque.streamlit.app/redacpro`.
+    - Se forma con el nombre en minúsculas y sin tildes («Ñandú» → `nandu`).
+    - Es única: si otra app ya la tiene, o coincide con una página de Yahoraque (`mi-app`, `usuarios`, `publicas`, `app`, `consumo`) o con una ruta interna de Streamlit (`static`, `media`, `component`, `healthz`, `stcore`, `vendor`), se usa la primera libre de `-2`, `-3`… (`redacpro-2`).
+    - Se da la primera vez que la app se hace pública y se guarda en su `app.json` (`slug`). **No cambia nunca**: ni al reconstruirla, ni al cambiarla el admin, ni al hacerla privada y otra vez pública. Así los enlaces compartidos siguen funcionando. Solo se libera al borrar la app.
+    - Las apps que ya eran públicas antes de existir las direcciones reciben la suya la primera vez que se carga la lista de apps públicas. Si no se puede guardar, siguen con el enlace antiguo.
+    - **Por qué no `/app/redacpro`:** Streamlit no admite rutas de dos niveles (con dos niveles la página sale en blanco).
+  - **Enlaces antiguos** (`/app?app=<hash del dueño>`): siguen funcionando. Si la app es pública, llevan a su dirección nueva; si es privada, funcionan como antes (caso límite 22).
+  - **Enlace para compartir:** cuando la app es pública, el dueño ve en la página de su app la dirección completa (por ejemplo `https://yahoraque.streamlit.app/redacpro`) en un recuadro con botón de copiar. Se construye con el dominio por el que se entra, sin la ruta interna del marco de Streamlit Cloud (`/~/+/`). «Abrir» en «Apps públicas» lleva a esa misma dirección.
   - **Abrir un enlace compartido:**
     - **Sin sesión y app pública:** se abre la app directamente como invitado, sin pantalla de acceso. Ese invitado no se recuerda: si después entra por la portada, ve la pantalla de acceso.
     - **Con sesión guardada:** entra con su usuario, no como invitado (también en Streamlit Cloud, donde la sesión llega del navegador un instante después).
@@ -251,7 +257,7 @@
 
 ### Ejecución de las apps
 - Las apps de los usuarios se ejecutan **dentro de Yahoraque**.
-- **Dónde se ven:** el dueño, en la entrada del menú con el nombre de la app; el admin, en «Usuarios» al elegir al usuario; todos (si es pública), en su página `/app?app=<hash del dueño>`. Siempre dentro de un marco, debajo del título con su nombre.
+- **Dónde se ven:** el dueño, en la entrada del menú con el nombre de la app; el admin, en «Usuarios» al elegir al usuario; todos (si es pública), en su dirección (por ejemplo `/redacpro`). Siempre dentro de un marco, debajo del título con su nombre.
 - **Apps en JavaScript siempre que sea posible:**
   - El fichero de la app es Python (`app.py`), pero su único trabajo es mostrar una página completa de HTML, CSS y JavaScript con una sola llamada `st.components.v1.html(HTML, height=...)`. Toda la lógica y la interacción (botones, cálculos, juegos, gráficos) van en JavaScript, así que responde al momento, sin recargar la página en el servidor.
   - Los widgets de Streamlit (`st.button`, `st.text_input`…) solo se usan si algo no se puede hacer en el navegador.
@@ -375,6 +381,7 @@ La app está bien si:
 - Una app nueva es privada: un invitado no la ve en «Apps públicas» (y su enlace se comporta como en el caso límite 22).
 - Al abrir el enlace para compartir de una app pública en un navegador sin sesión, se ve la app directamente, sin pantalla de acceso; con una sesión guardada, se ve con ese usuario.
 - Al abrir el enlace de una app privada sin sesión y entrar como su dueño, se llega a la página de la app.
+- Una app pública se abre en `https://yahoraque.streamlit.app/<su nombre>`, sin sesión y con sesión; esa es la dirección del enlace para compartir y de «Abrir». La dirección no cambia al reconstruir la app ni al hacerla privada y otra vez pública.
 - Al activar «Pública», la app aparece en «Apps públicas» y un invitado puede abrirla y usarla; al desactivarlo, deja de aparecer y su enlace muestra «Esta aplicación no existe o no es pública.».
 - Tras borrar su app, el usuario vuelve al chat «Crea tu aplicación», el menú muestra «Inicio» en lugar del nombre y la app desaparece de «Apps públicas».
 - Un usuario sin app ve en el menú «Inicio» y «Apps públicas», y «Inicio» abre el chat. Con app, ve solo el nombre de la app (que la abre) y «Apps públicas»; «Cambiar mi aplicación» aparece solo dentro de la página de la app y abre el chat. Al recargar se mantiene.
@@ -435,6 +442,9 @@ Cada fila es un criterio de aceptación: la app está bien si, en ese caso, pasa
 | **Enlaces** | | | |
 | 22 | Alguien abre el enlace de una app privada | Sin sesión: pantalla de acceso; al entrar como su dueño o el admin, llega a la app. Cualquier otro: «Esta aplicación no existe o no es pública.» | Ocultar una app y abrir su enlace en incógnito. |
 | 23 | Alguien abre un enlace con un identificador que no existe | «Esta aplicación no existe o no es pública.», el mismo mensaje que para una privada, para no revelar qué apps existen. | `/app?app=noexiste`. |
+| 42 | Alguien abre la dirección de una app privada o que no existe (`/secretix`) | Se comporta igual en los dos casos, para no revelar qué apps existen: sin sesión, la pantalla de acceso; con sesión, Streamlit avisa de que la página no existe y abre la de inicio. | Abrir en incógnito la dirección de una app privada y una inventada. |
+| 43 | Dos apps públicas se llaman igual, o una se llama como una página de Yahoraque | La primera en hacerse pública es `/holix`, la segunda `/holix-2`; una app «Usuarios» es `/usuarios-2`. Cada dirección abre su app. | Publicar dos apps «Holix» y abrir las dos direcciones. |
+| 44 | Se abre un enlace antiguo `/app?app=<hash>` de una app pública | Lleva a su dirección nueva (por ejemplo `/holix-2`) y la abre, también sin sesión. | Abrir en incógnito el enlace que se compartió antes del cambio. |
 | **Datos (GitHub)** | | | |
 | 24 | Falla GitHub al guardar, cambiar «Pública», restaurar o borrar | «No hemos podido guardar tu aplicación…», «No hemos podido cambiarlo…» (el interruptor vuelve a lo guardado, sin recargas en bucle), «No hemos podido restaurarla…», «No hemos podido borrar…». En todos, lo anterior sigue como estaba. | Con un `GITHUB_TOKEN` sin permiso de escritura. |
 | 25 | Dos guardados chocan en el mismo fichero | Se reintenta hasta 3 veces. | Dos pestañas guardando a la vez. |
@@ -475,6 +485,8 @@ Cada fila es un criterio de aceptación: la app está bien si, en ese caso, pasa
 - **Límites en días UTC:** los límites diarios se reinician a medianoche UTC, que en España es la 1:00 (2:00 en verano), no a medianoche. La cuota diaria de Google tampoco se reinicia a medianoche de España.
 - **La IA de las apps se puede equivocar:** una corrección o una lectura de letra difícil pueden tener errores. Por eso las apps lo dicen («Qué no hará») y llevan la marca «Con IA».
 - **Historial de git:** al borrar una cuenta, sus versiones antiguas siguen en el historial del repositorio.
+- **Direcciones de las apps en Streamlit Cloud:** las direcciones como `/redacpro` se han probado en local con Chrome, pero en Streamlit Cloud la app va dentro de un marco con su propia ruta (`/~/+/`). Hay que comprobar en producción, en incógnito, que una dirección abre la app sin sesión; si no, los enlaces antiguos `/app?app=…` siguen funcionando.
+- **Una dirección delata que una app existió:** al hacerse privada la app conserva su dirección, que no abre nada, y ninguna otra app puede usarla. Es el precio de que los enlaces no cambien.
 - **El admin cambia apps ajenas sin avisar:** el dueño no recibe ningún aviso, y en «Versiones» no se distingue qué versión hizo el admin. Si el dueño tenía el chat abierto, puede deshacer el cambio sin darse cuenta (caso límite 40). Se acepta porque hay un solo admin, el propietario de Yahoraque, y el dueño siempre puede restaurar su versión anterior.
 - **Privacidad en la capa gratuita:** el proveedor de IA puede usar los datos enviados para entrenar sus modelos.
 - **Repositorio público (es una práctica de máster):** "privada" significa que la app no aparece ni se puede abrir desde Yahoraque, pero su código, su nombre y si es pública se pueden leer en GitHub. Además, el nombre de cada usuario se lee en claro en su `user.json`. El código de los guardarraíles también es público. Se avisa al usuario de que no ponga información sensible en su app.
