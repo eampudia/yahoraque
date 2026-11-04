@@ -1,13 +1,62 @@
 import json
+import re
 
-# Definimos el contenido HTML, CSS y JavaScript para la aplicación
-HTML_CONTENT = """
-<!DOCTYPE html>
+# Título y encabezado principal en Streamlit
+st.title("✨ Generador de Pelis de Los Javis")
+st.markdown("Crea películas únicas e intensas al estilo de **Javier Calvo y Javier Ambrossi** (*La Llamada*, *Paquita Salas*, *Veneno*, *La Mesías*): drama pop, devoción, música y costumbrismo.")
+
+# Formulario para la idea o tema del usuario
+idea_usuario = st.text_input(
+    "💡 ¿Tienes alguna idea o tema en mente? (opcional)",
+    placeholder="Ej: Extraterrestres en la Feria de Abril, karaoke embrujado en Gran Vía...",
+    key="idea_input"
+)
+
+col_btn, _ = st.columns([1, 1])
+with col_btn:
+    generar = st.button("🎬 ¡Rodar Película!", type="primary", use_container_width=True, key="btn_generar")
+
+if generar:
+    prompt = f"""Eres un guionista estrella del universo cinematográfico de Los Javis (Javier Calvo y Javier Ambrossi).
+Tu misión es inventar una película o serie ficticia con su estilo inconfundible: melodrama apasionado, cultura pop española, folclore, fe o misticismo, comedia costumbrista, personajes al borde del colapso emocional y versiones o temazos musicales épicos.
+
+{f'La idea de partida del usuario es: "{idea_usuario.strip()}"' if idea_usuario.strip() else 'No hay idea de partida: inventa un concepto 100% libre, sorprendente, gracioso y emotivo al puro estilo Javis.'}
+
+Devuelve ÚNICAMENTE un objeto JSON válido (sin texto antes ni después, sin marcas markdown de bloque ```json) con la siguiente estructura exactas:
+{{
+  "titulo": "Título llamativo y poético en español",
+  "genero": "Nombre de género inventado estilo Javis (ej: Thriller Pop-Místico, Melodrama Flamenco-Galáctico, Dramedia de Culto)",
+  "sinopsis": "Argumento de 3 a 4 frases explicando los personajes principales, el conflicto dramático y su revelación o clímax emocional.",
+  "actores": ["Nombre Actor/Actriz Real 1 como Personaje 1", "Nombre Actor/Actriz Real 2 como Personaje 2", "Nombre Actor/Actriz Real 3 como Personaje 3"],
+  "canciones": ["Título de canción conocida 1 con un toque gracioso o versión emotiva", "Título de canción conocida 2...", "Título de canción conocida 3...", "Título de canción conocida 4..."]
+}}
+"""
+    with st.spinner("🔮 Los Javis están buscando la inspiración y escribiendo el guion..."):
+        respuesta = ia(prompt)
+        try:
+            texto_limpio = respuesta.strip()
+            if texto_limpio.startswith("```"):
+                texto_limpio = re.sub(r"^```(?:json)?", "", texto_limpio)
+                texto_limpio = re.sub(r"```$", "", texto_limpio).strip()
+            
+            data = json.loads(texto_limpio)
+            st.session_state["pelicula"] = data
+            st.session_state["error"] = None
+        except Exception:
+            st.session_state["pelicula"] = None
+            st.session_state["error"] = respuesta
+
+if st.session_state.get("error"):
+    st.warning("La IA ha respondido con un formato libre. Aquí tienes la propuesta de guion:")
+    st.markdown(st.session_state["error"])
+
+if st.session_state.get("pelicula"):
+    peli = st.session_state["pelicula"]
+    
+    html_code = """<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Cargamos Confetti para celebraciones -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <style>
         :root {
@@ -19,377 +68,201 @@ HTML_CONTENT = """
         }
 
         body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background: linear-gradient(135deg, #fdf4ff 0%, #fae8ff 50%, #f3e8ff 100%);
-            color: #2e1065;
-            padding: 1rem;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             margin: 0;
+            padding: 1rem;
+            background: transparent;
+            color: #1e1b4b;
         }
 
-        .container {
+        .poster-card {
+            background: linear-gradient(145deg, #1e1b4b 0%, #311042 50%, #4c1d95 100%);
+            border-radius: 24px;
+            padding: 2.5rem 2rem;
+            color: #ffffff;
+            box-shadow: 0 20px 40px rgba(30, 27, 75, 0.4);
+            border: 3px solid #ec4899;
+            position: relative;
+            overflow: hidden;
             max-width: 800px;
             margin: 0 auto;
         }
 
-        header {
+        .header-center {
             text-align: center;
             margin-bottom: 2rem;
         }
 
-        h1 {
-            font-size: 2.5rem;
-            background: linear-gradient(to right, #ec4899, #8b5cf6, #3b82f6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-            font-weight: 800;
-        }
-
-        .subtitle {
-            font-size: 1.1rem;
-            color: #6b21a8;
-        }
-
-        .controls-card {
-            background: white;
-            border-radius: 1.5rem;
-            padding: 1.5rem;
-            box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.15);
-            margin-bottom: 2rem;
-            border: 2px solid #f3e8ff;
-        }
-
-        .form-group {
-            margin-bottom: 1.2rem;
-        }
-
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: #581c87;
-        }
-
-        select {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border-radius: 0.75rem;
-            border: 2px solid #e9d5ff;
-            background-color: #faf5ff;
-            font-size: 1rem;
-            color: #3b0764;
-            font-weight: 500;
-            outline: none;
-            transition: all 0.2s;
-        }
-
-        select:focus {
-            border-color: #8b5cf6;
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
-        }
-
-        .btn-generate {
-            width: 100%;
-            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
-            color: white;
-            border: none;
-            padding: 1rem;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-radius: 0.75rem;
-            cursor: pointer;
-            box-shadow: 0 4px 14px rgba(236, 72, 153, 0.4);
-            transition: transform 0.1s, box-shadow 0.1s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .btn-generate:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(236, 72, 153, 0.6);
-        }
-
-        .btn-generate:active {
-            transform: translateY(1px);
-        }
-
-        /* Estilo Cartel de Cine */
-        .poster {
-            background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%);
-            color: white;
-            border-radius: 2rem;
-            padding: 2.5rem;
-            box-shadow: 0 20px 40px -10px rgba(30, 27, 75, 0.5);
-            position: relative;
-            overflow: hidden;
-            border: 4px solid #f472b6;
-            text-align: center;
-            display: none;
-            animation: fadeIn 0.5s ease-out forwards;
-        }
-
-        .poster.visible {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        .poster::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(236,72,153,0.15) 0%, transparent 70%);
-            pointer-events: none;
-        }
-
-        .badge {
+        .badge-genre {
             display: inline-block;
-            background: #f472b6;
-            color: #fff;
-            padding: 0.4rem 1rem;
-            border-radius: 2rem;
-            font-size: 0.85rem;
+            background: linear-gradient(90deg, #ec4899, #8b5cf6);
+            color: #ffffff;
+            padding: 0.5rem 1.2rem;
+            border-radius: 50px;
             font-weight: 700;
+            font-size: 0.85rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 12px rgba(244, 114, 182, 0.4);
+            letter-spacing: 1.5px;
+            margin-bottom: 1.2rem;
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
         }
 
         .poster-title {
-            font-size: 2.8rem;
+            font-size: 2.5rem;
             font-weight: 900;
+            margin: 0;
             line-height: 1.1;
-            margin-bottom: 1.5rem;
-            text-transform: uppercase;
-            font-family: 'Impact', Charcoal, sans-serif;
-            letter-spacing: 1px;
             color: #fef08a;
-            text-shadow: 3px 3px 0px #db2777, 6px 6px 0px #7c3aed;
+            text-transform: uppercase;
+            text-shadow: 3px 3px 0px #be185d, 6px 6px 0px #5b21b6;
+            letter-spacing: 0.5px;
         }
 
-        .poster-synopsis {
-            font-size: 1.25rem;
-            line-height: 1.6;
-            margin-bottom: 2rem;
-            color: #f3e8ff;
-            font-style: italic;
-            max-width: 90%;
-            margin-left: auto;
-            margin-right: auto;
+        .section-box {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
-        .poster-footer {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            border-top: 1px dashed rgba(255,255,255,0.2);
-            padding-top: 1.5rem;
-            font-size: 0.95rem;
-            color: #cbd5e1;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .tag-pill {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 0.3rem 0.8rem;
-            border-radius: 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .cast-list {
-            font-weight: bold;
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 800;
             color: #f472b6;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .synopsis-text {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #f3e8ff;
+            margin: 0;
+            font-style: italic;
+        }
+
+        .cast-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .cast-item {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 0.6rem 1rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            color: #fef08a;
+            border-left: 3px solid #ec4899;
+        }
+
+        .music-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 0.6rem;
+        }
+
+        .music-item {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 0.6rem 1rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            color: #a7f3d0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-left: 3px solid #10b981;
+        }
+
+        .footer-tag {
+            text-align: center;
+            margin-top: 1.8rem;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 600px) {
+            .poster-title {
+                font-size: 1.8rem;
+            }
+            .poster-card {
+                padding: 1.5rem 1rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container" x-data="javijatorApp()">
-        <header>
-            <h1>✨ Generador de Pelis Los Javis ✨</h1>
-            <p class="subtitle">Crea obras maestras modernas con folclóricas, misterio, lágrimas y temazos pop.</p>
-        </header>
-
-        <div class="controls-card">
-            <div class="form-group">
-                <label for="universe">🔮 Elige la temática principal:</label>
-                <select id="universe" x-model="selectedUniverse">
-                    <option value="random">¡Sorpréndeme (Aleatorio)! 🌟</option>
-                    <option value="malasana">Misterio oscuro en Malasaña 🕵️‍♀️</option>
-                    <option value="extraterrestres">Extraterrestres muy flamencos 👽💃</option>
-                    <option value="folclorica">Folclórica espacial en Benidorm 🚀🎤</option>
-                    <option value="operacion">Academia de talentos con drama místico 🎹✨</option>
-                    <option value="costumbrismo">Costumbrismo mágico en el extrarradio 🏘️💖</option>
-                </select>
-            </div>
-
-            <button class="btn-generate" @click="generateMovie()">
-                <span>🎬 ¡Rodar Película!</span>
-            </button>
+    <div class="poster-card">
+        <div class="header-center">
+            <span class="badge-genre" id="genre"></span>
+            <h1 class="poster-title" id="title"></h1>
         </div>
 
-        <!-- Cartel Generado -->
-        <div class="poster" :class="{ 'visible': movieGenerated }">
-            <div class="badge" x-text="movie.genre"></div>
-            <h2 class="poster-title" x-text="movie.title"></h2>
-            <p class="poster-synopsis" x-text="movie.synopsis"></p>
-            
-            <div class="poster-footer">
-                <div>✨ Estreno: <span x-text="movie.platform"></span></div>
-                <div>⭐ Protagoniza: <span class="cast-list" x-text="movie.cast"></span></div>
-                <div class="tag-pill" x-text="movie.ost"></div>
-            </div>
+        <div class="section-box">
+            <div class="section-title">📖 Argumento de la Película</div>
+            <p class="synopsis-text" id="synopsis"></p>
+        </div>
+
+        <div class="section-box">
+            <div class="section-title">🎭 Reparto Principal</div>
+            <div class="cast-grid" id="cast"></div>
+        </div>
+
+        <div class="section-box">
+            <div class="section-title">🎵 Banda Sonora Original</div>
+            <ul class="music-list" id="music"></ul>
+        </div>
+
+        <div class="footer-tag">
+            ✨ Una producción original del Universo Los Javis ✨
         </div>
     </div>
 
-    <!-- Cargamos Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
-
     <script>
-        function javijatorApp() {
-            return {
-                selectedUniverse: 'random',
-                movieGenerated: false,
-                movie: {
-                    title: '',
-                    synopsis: '',
-                    genre: '',
-                    platform: '',
-                    cast: '',
-                    ost: ''
-                },
-                
-                databases: {
-                    malasana: {
-                        genre: 'Thriller Neón-Cañí',
-                        platforms: ['Atresplayer Premium', 'Movistar+ Originales'],
-                        casts: ['Macarena García y Brays Efe', 'Ana Castillo y Javier Calvo', 'Najwa Nimri con peluca rubia platino'],
-                        osts: ['🎵 BSO: "Llantos en la Plazuela de San Ildefonso" por Rigoberta Bandini', '🎵 BSO: Versión trágica de un tema de Mecano'],
-                        titles: [
-                            'Las Niñas del 4º B',
-                            'Secreto a Voces en Malasaña',
-                            'Luces de Neón y Lágrimas de Rímel',
-                            'El Misterio de la Croqueta Perdida'
-                        ],
-                        synopses: [
-                            'Tres amigas que comparten piso en la calle Corredera baja de San Pablo descubren un portal dimensional dentro de un armario empotrado de Ikea, donde resuenan los grandes éxitos de Rocío Jurado mientras el mundo se acaba.',
-                            'Tras una noche loca en un bar indie de Malasaña, una joven influencer despierta con superpoderes telepáticos que solo se activan cuando come churros con chocolate caliente y llora recordando a su ex.',
-                            'Un detective con flequillo impoluto y gabardina rosa investiga la extraña desaparición de la mascota de un bar vegano, destapando una conspiración interdimensional de haters de OT.'
-                        ]
-                    },
-                    extraterrestres: {
-                        genre: 'Sci-Fi Costumbrista',
-                        platforms: ['Netflix España', 'Filmin (Edición Especial)'],
-                        casts: ['Loles León y un extraterrestre CGI', 'Amaia Romero y cameos sorpresa', 'Carmen Machi como abuela abducida'],
-                        osts: ['🎵 BSO: "El OVNI que me trajo a Torrevieja" (Electro-copla)', '🎵 BSO: Sintetizadores ochenteros y palmas flamencas'],
-                        titles: [
-                            'Mi Abuela es de Alfa Centauri',
-                            'Marcianos en el Rocío',
-                            'Luces Extrañas sobre Albacete',
-                            'El Contacto del Jamón'
-                        ],
-                        synopses: [
-                            'Una nave nodriza aterriza por error en medio de la Feria de Abril. Los alienígenas quedan tan fascinados por el rebujito y los volantes que deciden cancelar la invasión terrestre para montar una caseta.',
-                            'Un modesto matrimonio de jubilados en Benidorm acoge en su apartamento de la playa a un extraterrestre verde que resulta ser un fan absoluto de Raphael y experto en dominó.',
-                            'Cuando una lluvia de meteoritos cae sobre un pueblo de Cuenca, los habitantes descubren que el mineral espacial potencia las voces de los coros parroquiales hasta niveles intergalácticos.'
-                        ]
-                    },
-                    folclorica: {
-                        genre: 'Melodrama Galáctico',
-                        platforms: ['Prime Video', 'Atresplayer Premium'],
-                        casts: ['Rossy de Palma y Belén Cuesta', 'Isabel Pantoja (en espíritu holográfico)', 'Macarena Ramírez y bailarines enmallados'],
-                        osts: ['🎵 BSO: "Se me rompió el traje espacial por quererte"', '🎵 BSO: Copla futurista con autotune'],
-                        titles: [
-                            'Lágrimas de Luz en la Vía Láctea',
-                            'La Faraona de Andrómeda',
-                            'Copla Cósmica',
-                            'Estrellas, Volantes y Soledad'
-                        ],
-                        synopses: [
-                            'En el año 3050, la última folclórica viva cruza la galaxia a bordo de un crucero espacial con forma de abanico gigante, cantando coplas de desamor a planetas deshabitados.',
-                            'Una gran diva de la copla es exiliada al planeta Marte tras un escándalo con Hacienda intergaláctica, donde monta el tablao más exclusivo del sistema solar.',
-                            'Un joven aspirante a artista encuentra un viejo radiocasete que emite coplas grabadas por una nave perdida en un agujero negro en 1984.'
-                        ]
-                    },
-                    operacion: {
-                        genre: 'Musical Místico-Emocional',
-                        platforms: ['Movistar+ Originales', 'Netflix España'],
-                        casts: ['Los Javis (cameo autoconsciente)', 'Chenoa y un coro de ángeles modernos', 'Alumnos de academia ficticia y drama intenso'],
-                        osts: ['🎵 BSO: "Cruzar la pasarela hacia el infinito"', '🎵 BSO: Balada al piano grabada en plano secuencia'],
-                        titles: [
-                            'La Última Nota de la Academia',
-                            'Sálvate si Puedes, Cariño',
-                            'Tragedia en el Conservatorio',
-                            'El Canto de las Sirenas Autodidactas'
-                        ],
-                        synopses: [
-                            'En una academia de canto aislada en la sierra madrileña, los concursantes descubren que el profesor principal es en realidad un espíritu atrapado desde los años 90 que solo liberará su talento si hacen un trío vocal perfecto.',
-                            'Un reality show musical se convierte en una experiencia mística cuando todos los participantes empiezan a levitar durante los pases de micros de los lunes.',
-                            'Nadie sabe qué pasa dentro de la habitación del piano de cola, pero quienes entran salen convertidos en estrellas del pop alternativo con una profunda crisis existencial.'
-                        ]
-                    },
-                    costumbrismo: {
-                        genre: 'Realismo Mágico Cañí',
-                        platforms: ['Filmin', 'Atresplayer Premium'],
-                        casts: ['Carmen Maura y Yolanda Ramos', 'Secun de la Rosa y Eva Ugarte', 'Todo el reparto de una corrala madrileña'],
-                        osts: ['🎵 BSO: "Café, Colesterol y Esperanza"', '🎵 BSO: Rumba flamenca melancólica'],
-                        titles: [
-                            'El Portal de los Milagros',
-                            'Vecinos del Tercer Tercera',
-                            'La Mercería del Más Allá',
-                            'Magia en el Barrio'
-                        ],
-                        synopses: [
-                            'En una corrala castiza donde nunca pasa nada, las vecinas descubren que el felpudo del portal es capaz de conceder cualquier deseo a cambio de un cotilleo jugoso y una taza de café.',
-                            'Una modesta mercería de barrio esconde en su trastienda un taller clandestino donde se arreglan los corazones rotos de todo el distrito centro usando hilo de oro y nostalgia.',
-                            'Un apagón general en pleno agosto madrileño obliga a los vecinos a salir a la calle, donde una abuela empieza a contar historias que cobran vida en forma de proyecciones holográficas en las fachadas.'
-                        ]
-                    }
-                },
+        const movie = MOVIE_DATA_PLACEHOLDER;
 
-                generateMovie() {
-                    // Seleccionar categoría
-                    let universeKey = this.selectedUniverse;
-                    if (universeKey === 'random') {
-                        const keys = Object.keys(this.databases);
-                        universeKey = keys[Math.floor(Math.random() * keys.length)];
-                    }
+        document.getElementById('genre').textContent = movie.genero || 'Película Javis';
+        document.getElementById('title').textContent = movie.titulo || 'Sin título';
+        document.getElementById('synopsis').textContent = movie.sinopsis || '';
 
-                    const db = this.databases[universeKey];
-                    
-                    // Elegir elementos aleatorios dentro de la base de datos elegida
-                    this.movie.genre = db.genre;
-                    this.movie.platform = db.platforms[Math.floor(Math.random() * db.platforms.length)];
-                    this.movie.cast = db.casts[Math.floor(Math.random() * db.casts.length)];
-                    this.movie.ost = db.osts[Math.floor(Math.random() * db.osts.length)];
-                    this.movie.title = db.titles[Math.floor(Math.random() * db.titles.length)];
-                    this.movie.synopsis = db.synopses[Math.floor(Math.random() * db.synopses.length)];
+        const castContainer = document.getElementById('cast');
+        castContainer.innerHTML = '';
+        (movie.actores || []).forEach(actor => {
+            const div = document.createElement('div');
+            div.className = 'cast-item';
+            div.textContent = '⭐ ' + actor;
+            castContainer.appendChild(div);
+        });
 
-                    this.movieGenerated = true;
+        const musicContainer = document.getElementById('music');
+        musicContainer.innerHTML = '';
+        (movie.canciones || []).forEach(song => {
+            const li = document.createElement('li');
+            li.className = 'music-item';
+            li.textContent = '🎤 ' + song;
+            musicContainer.appendChild(li);
+        });
 
-                    // Lanzar confeti fiestero estilo Javis
-                    confetti({
-                        particleCount: 100,
-                        spread: 70,
-                        origin: { y: 0.6 },
-                        colors: ['#ec4899', '#8b5cf6', '#3b82f6', '#fef08a']
-                    });
-                }
-            }
+        if (window.confetti) {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#ec4899', '#8b5cf6', '#fef08a', '#10b981']
+            });
         }
     </script>
 </body>
-</html>
-"""
+</html>"""
 
-# Renderizamos el componente con altura suficiente para que no haya scroll cortado
-st.components.v1.html(HTML_CONTENT, height=850)
+    html_renderizado = html_code.replace("MOVIE_DATA_PLACEHOLDER", json.dumps(peli))
+    st.components.v1.html(html_renderizado, height=820)
