@@ -1,10 +1,12 @@
 {
-  "apps": {},
+  "apps": {
+    "1dcfd6f4f7e5": 3
+  },
   "builds": {},
   "failures": {},
   "models": {
     "gemini-3.5-flash-lite": {
-      "apps": 1
+      "apps": 4
     }
   },
   "resting": {}
