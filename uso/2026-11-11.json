@@ -1,32 +1,52 @@
 {
   "apps": {
-    "1dcfd6f4f7e5": 4
+    "1dcfd6f4f7e5": 6
   },
   "builds": {},
   "failures": {
-    "gemini-3.7-flash": {
+    "gemini-3.5-flash-lite": {
       "saturado": 1
     },
-    "gemini-3.8-flash": {
+    "gemini-3.6-flash": {
       "saturado": 1
+    },
+    "gemini-3.7-flash": {
+      "saturado": 2
+    },
+    "gemini-3.8-flash": {
+      "saturado": 2
     }
   },
   "models": {
+    "gemini-3.1-flash-lite": {
+      "apps": 1
+    },
+    "gemini-3.5-flash": {
+      "analista": 1
+    },
     "gemini-3.5-flash-lite": {
-      "apps": 5
+      "apps": 6
     },
     "gemini-3.6-flash": {
       "analista": 1
     }
   },
   "resting": {
+    "gemini-3.5-flash-lite": {
+      "reason": "saturado",
+      "until": 1794426526.3613198
+    },
+    "gemini-3.6-flash": {
+      "reason": "saturado",
+      "until": 1794426551.239923
+    },
     "gemini-3.7-flash": {
       "reason": "saturado",
-      "until": 1794426159.362455
+      "until": 1794426545.199383
     },
     "gemini-3.8-flash": {
       "reason": "saturado",
-      "until": 1794426155.938793
+      "until": 1794426524.8922572
     }
   }
 }
