@@ -4,6 +4,15 @@
     "03b4c1ac4151": 1
   },
   "failures": {
+    "gemini-3.1-pro-preview": {
+      "sin cuota diaria": 1
+    },
+    "gemini-3.5-flash": {
+      "saturado": 1
+    },
+    "gemini-3.5-flash-lite": {
+      "saturado": 1
+    },
     "gemini-3.6-flash": {
       "saturado": 1
     },
@@ -15,6 +24,9 @@
     }
   },
   "models": {
+    "gemini-3.1-flash-lite": {
+      "desarrollador": 1
+    },
     "gemini-3.5-flash": {
       "analista": 1
     },
@@ -23,6 +35,18 @@
     }
   },
   "resting": {
+    "gemini-3.1-pro-preview": {
+      "reason": "sin cuota diaria",
+      "until": 1795529187.2046416
+    },
+    "gemini-3.5-flash": {
+      "reason": "saturado",
+      "until": 1795443085.6991653
+    },
+    "gemini-3.5-flash-lite": {
+      "reason": "saturado",
+      "until": 1795443087.0848045
+    },
     "gemini-3.6-flash": {
       "reason": "saturado",
       "until": 1795443037.5408459
