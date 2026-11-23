@@ -1,0 +1,7 @@
+{
+  "name": "Rimatron",
+  "public": false,
+  "description": "Una aplicaci\u00f3n divertida que crea rimas muy gamberras y picantes a partir de la palabra que escriba el usuario.",
+  "version": "20261123T140633327394Z",
+  "uses_ai": true
+}
