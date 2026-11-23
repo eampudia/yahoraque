@@ -1,13 +1,36 @@
 {
   "apps": {},
-  "builds": {},
+  "builds": {
+    "03b4c1ac4151": 1
+  },
   "failures": {
+    "gemini-3.6-flash": {
+      "saturado": 1
+    },
+    "gemini-3.7-flash": {
+      "saturado": 1
+    },
     "gemini-3.8-flash": {
       "saturado": 1
     }
   },
-  "models": {},
+  "models": {
+    "gemini-3.5-flash": {
+      "analista": 1
+    },
+    "gemini-3.6-flash": {
+      "analista": 1
+    }
+  },
   "resting": {
+    "gemini-3.6-flash": {
+      "reason": "saturado",
+      "until": 1795443037.5408459
+    },
+    "gemini-3.7-flash": {
+      "reason": "saturado",
+      "until": 1795442985.1800594
+    },
     "gemini-3.8-flash": {
       "reason": "saturado",
       "until": 1795442972.1577137
