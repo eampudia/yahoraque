@@ -1,5 +1,7 @@
 {
-  "apps": {},
+  "apps": {
+    "03b4c1ac4151": 2
+  },
   "builds": {
     "03b4c1ac4151": 1
   },
@@ -25,6 +27,7 @@
   },
   "models": {
     "gemini-3.1-flash-lite": {
+      "apps": 2,
       "desarrollador": 1
     },
     "gemini-3.5-flash": {
